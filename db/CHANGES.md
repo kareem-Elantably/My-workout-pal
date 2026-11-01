@@ -1,7 +1,8 @@
 # Schema changes: v2 → v3
 
-Run the tests with `db/test/run.sh` (needs the Postgres 16 server binaries). It loads
-`schema.sql` into a throwaway database with Supabase stand-ins and runs 98 checks.
+The schema is the migration `supabase/migrations/20261031000000_initial_schema.sql`; the
+Supabase GitHub integration applies it on merge to `main`. Run the tests with `db/test/run.sh`
+(needs the Postgres 16 server binaries). It loads the migrations into a throwaway database with Supabase stand-ins and runs 98 checks.
 
 ## Security
 - RLS is enabled on every table. A test fails if any table in `public` is missing it.
@@ -61,7 +62,7 @@ Run the tests with `db/test/run.sh` (needs the Postgres 16 server binaries). It 
 
 ## Still open
 - **Deployment:**
-  - pg_cron jobs are scheduled only if the extension is enabled.
+  - The migration enables pg_cron and creates the three private storage buckets itself.
   - The Edge Functions for push and file cleanup on account deletion are still to be written.
   - Check Arabic trigram search on the Supabase project's locale. The tests use `C.UTF-8`.
   - PowerSync sync rules must mirror the female image rule.

@@ -140,6 +140,8 @@ select t.id('f'), id, '["09:00", "14:00", "20:00"]' from questions where key = '
 -- =====================================================================
 select t.check(not exists (select 1 from pg_tables where schemaname = 'public' and not rowsecurity),
                'every public table has RLS enabled');
+select t.check((select count(*) from storage.buckets where not public) = 3,
+               'the migration creates the three private storage buckets');
 select t.check((select gender from profiles where id = t.id('f')) = 'female',
                'sign-up trigger creates the profile from metadata');
 select t.check(t.fails($$insert into auth.users values (gen_random_uuid(), '{"full_name": "No gender"}')$$),

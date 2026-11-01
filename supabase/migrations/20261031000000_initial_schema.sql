@@ -1267,6 +1267,9 @@ end $$;
 
 do $$
 begin
+  if exists (select 1 from pg_available_extensions where name = 'pg_cron') then
+    create extension if not exists pg_cron;
+  end if;
   if exists (select 1 from pg_extension where extname = 'pg_cron') then
     perform cron.schedule('generate-due-milestones', '7 * * * *', 'select private.generate_due_milestones()');
     perform cron.schedule('subscriptions-ending',    '13 * * * *', 'select private.notify_ending_subscriptions(7)');
@@ -1895,6 +1898,12 @@ create policy subscriptions_read_own on subscriptions for select to authenticate
 -- milestone-images/<trainee_id>/<file>   female image rule
 -- certificates/<coach_id>/<file>         the coach and admins
 -- avatars/<user_id>/<file>               anyone who can see the profile
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types) values
+  ('milestone-images', 'milestone-images', false, 10485760, '{image/jpeg,image/png,image/heic,image/webp}'),
+  ('certificates',     'certificates',     false, 10485760, '{image/jpeg,image/png,image/heic,image/webp,application/pdf}'),
+  ('avatars',          'avatars',          false,  5242880, '{image/jpeg,image/png,image/heic,image/webp}')
+on conflict (id) do nothing;
+
 create policy "milestone images read" on storage.objects for select to authenticated
   using (bucket_id = 'milestone-images'
          and private.can_view_trainee_images(private.try_uuid((storage.foldername(name))[1])));
