@@ -1,16 +1,16 @@
 # Schema changes: v2 → v3
 
 Run the tests with `db/test/run.sh` (needs the Postgres 16 server binaries). It loads
-`schema.sql` into a throwaway database with Supabase stand-ins and runs 95 checks.
+`schema.sql` into a throwaway database with Supabase stand-ins and runs 98 checks.
 
 ## Security
 - RLS is enabled on every table. A test fails if any table in `public` is missing it.
 - Users can't grant themselves roles, approve their own applications or assign themselves as coach.
 - `gender` can only be changed by an admin (`admin_set_gender`). The other profile columns stay editable by the user.
 - Earnings and coach-load views run with the caller's permissions (`security_invoker`).
-- Chat: you can only send as yourself, only the recipient can mark a message read, and nobody can edit or delete messages. Conversations are created when a coach is assigned.
+- Chat is text only (no attachments). You can only send as yourself, only the recipient can mark a message read, and nobody can edit or delete messages. Conversations are created when a coach is assigned.
 - Access helpers moved to schema `private`, which the API doesn't expose. They read `auth.uid()` and no longer take a viewer parameter.
-- Storage policies for the `milestone-images` (female image rule), `chat-images`, `certificates` and `avatars` buckets.
+- Storage policies for the `milestone-images` (female image rule), `certificates` and `avatars` buckets.
 - Coach permissions follow the active assignment and its scope, not who created the plan, so a replacement coach can edit the plan they inherit.
 - Trainees must be approved before they can log workouts or meals. An admin can only approve a trainee after assigning at least one coach.
 
@@ -34,7 +34,7 @@ Run the tests with `db/test/run.sh` (needs the Postgres 16 server binaries). It 
 - Foods used in a plan keep their nutrient values (only an admin can correct them).
 - Account deletion: `delete_my_account()`, with consistent `on delete` rules. Subscriptions are kept with the trainee or coach set to null.
 - `updated_at` is maintained by triggers (needed for PowerSync's latest-change-wins).
-- Earnings: `coach_earnings(from, to)` spreads each subscription by day and rounds only at the end.
+- Earnings: `coach_earnings(from, to)` splits each subscription into equal monthly shares (see B4).
 - Indexes added for foreign keys, unread counts and the progress chart (`set_logs(trainee_id, exercise_id, session_date)`).
 - System notifications store no text. The app renders `type_key + data` in the reader's language.
 
@@ -42,9 +42,13 @@ Run the tests with `db/test/run.sh` (needs the Postgres 16 server binaries). It 
 | | Decision |
 |---|---|
 | B1 | Full flexibility. Any day of the plan can be logged on any date, and resting is always allowed. `next_workout_day()` only suggests. Resting on a training day pushes that day to tomorrow. A planned rest day is used up by any day without a workout, and training on it just skips it. |
-| B2 | Meals marked `counts_for_streak = false` (snacks) aren't needed for the streak. With no nutrition plan, a training day counts and a rest day is neutral. *(My default. Please confirm.)* |
-| B3 | Going more than 14 rest days in a row resets the streak to 0, and it restarts on the next training day. Any day with streak meals not all done is a missed day; the first is forgiven and the second resets the streak. *(My default. Please confirm.)* |
-| B4 | Spread by day: 2,500 EGP from 1 Nov to 31 Jan gives 815.22 in November. **The spec's example (833.33) needs updating**, or tell me to switch to equal shares per month. |
+| B2 | Meals marked `counts_for_streak = false` (snacks) aren't needed for the streak. With no nutrition plan, a training day counts and a rest day is neutral. |
+| B3 | Going more than 14 rest days in a row resets the streak to 0, and it restarts on the next training day. Any day with streak meals not all done is a missed day; the first is forgiven and the second resets the streak. |
+| B4 | Equal shares per month. A subscription is split into one share per subscription month, counted from the start date, and each share is earned on the day its month starts. 2,500 EGP from 1 Nov to 31 Jan gives 833.33 in Nov, 833.33 in Dec and 833.34 in Jan; the last share takes the rounding remainder. |
+| B9 | One workout per day (kept). |
+| B11 | At most one active coach per scope (kept). |
+| B12 | Chat stays open after an assignment ends (kept). |
+| B13 | The female image rule covers milestone images only; profile pictures are fine. Chat has no attachments at all, so `messages.image_path` and the `chat-images` bucket were removed. **Spec update:** the spec's chat section says "text and images". |
 | B7 | One reminder per meal (`meal_slot`). Until the user sets one: the meal's `time_hint`, then the sign-up meal time, then off. Workout, milestone and daily-data reminders default to 18:00, 09:00 and 21:00 (`reminder_defaults`). `my_reminders()` returns the list to schedule on the device. |
 | B8 | `exercises.tracking`: `weight_reps`, `reps`, `duration`, or `distance_duration`. Plans and set logs gained duration and distance. Cardio machines (treadmill, bike…) are exercises with `distance_duration`. |
 | B10 | Coaches choose grams or a unit per item. Units are per food in `food_units` (1 loaf = 90 g), and grams is calculated. |
@@ -56,10 +60,6 @@ Run the tests with `db/test/run.sh` (needs the Postgres 16 server binaries). It 
 | B19 | `coach_dashboard()`: trainees sorted by missed days, then due milestones, then unread messages. Each row shows today's status, the streak and subscription days left. |
 
 ## Still open
-- **B9:** one workout per day (`unique(trainee_id, session_date)`) is unchanged.
-- **B11:** at most one active coach per scope.
-- **B12:** chat stays writable after an assignment ends.
-- **B13:** the female image rule covers milestone images only (not avatars or chat photos).
 - **Deployment:**
   - pg_cron jobs are scheduled only if the extension is enabled.
   - The Edge Functions for push and file cleanup on account deletion are still to be written.

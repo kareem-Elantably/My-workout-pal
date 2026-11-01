@@ -176,6 +176,12 @@ select t.check(t.fails($$insert into messages (conversation_id, sender_id, body)
 select t.check(not t.fails($$insert into messages (conversation_id, sender_id, body)
                              select id, auth.uid(), 'hi coach' from conversations where coach_id = t.id('coach1')$$),
                'a participant can send as themselves (conversation created on assignment)');
+select t.check(t.fails($$insert into messages (conversation_id, sender_id, body)
+                         select id, auth.uid(), '   ' from conversations where coach_id = t.id('coach1')$$),
+               'chat is text only: an empty message is rejected');
+select t.check(not exists (select 1 from information_schema.columns
+                           where table_name = 'messages' and column_name = 'image_path'),
+               'chat has no attachment column (B13)');
 select t.check(t.fails($$insert into conversations (coach_id, trainee_id) values (t.id('x'), auth.uid())$$),
                'users cannot open conversations themselves');
 select t.login('coach1');
@@ -467,10 +473,12 @@ insert into subscriptions (trainee_id, coach_id, amount_egp, starts_on, ends_on)
 values (t.id('f'), t.id('coach1'), 2500, '2026-11-01', '2027-01-31');
 insert into subscriptions (trainee_id, coach_id, amount_egp, starts_on, ends_on)
 values (t.id('m'), t.id('coach1'), 1000, t.today() - 84, t.today() + 5);
-select t.check((select sum(amount_egp) from coach_earnings('2026-11-01', '2026-11-30') where trainee_id = t.id('f')) = 815.22,
-               'November share of 2,500 EGP over 92 days = 815.22');
+select t.check((select sum(amount_egp) from coach_earnings('2026-11-01', '2026-11-30') where trainee_id = t.id('f')) = 833.33,
+               'November share of 2,500 EGP over 3 months = 833.33 (B4: per month)');
+select t.check((select sum(amount_egp) from coach_earnings('2027-01-01', '2027-01-31') where trainee_id = t.id('f')) = 833.34,
+               'the last month takes the rounding remainder');
 select t.check((select sum(amount_egp) from coach_earnings('2026-11-01', '2027-01-31') where trainee_id = t.id('f')) = 2500.00,
-               'the full period adds up to exactly 2,500.00 (v2: 2,499.9988)');
+               'the full period adds up to exactly 2,500.00');
 
 select t.login('m');
 select t.check((select days_left = 6 and status = 'ending_soon' from subscription_status), 'the trainee sees 6 days left');

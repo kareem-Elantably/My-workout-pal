@@ -604,11 +604,9 @@ create table messages (
   id               uuid primary key default gen_random_uuid(),
   conversation_id  uuid not null references conversations(id) on delete cascade,
   sender_id        uuid not null references profiles(id) on delete cascade,
-  body             text,
-  image_path       text,                     -- storage: chat-images/<conversation_id>/...
+  body             text not null check (length(trim(body)) > 0),   -- text only, no attachments
   created_at       timestamptz not null default now(),
-  read_at          timestamptz,
-  check (body is not null or image_path is not null)
+  read_at          timestamptz
 );
 create index on messages (conversation_id, created_at desc);
 create index messages_unread on messages (conversation_id) where read_at is null;
@@ -1448,17 +1446,24 @@ language sql stable as $$
   order by missed_days_7 desc, milestones_due desc, unread_messages desc, p.full_name;
 $$;
 
--- Earnings in a date range: each subscription is spread evenly over its
--- days; only the final amount is rounded, so a full period adds up exactly.
+-- Earnings in a date range. A subscription is split into equal monthly
+-- shares, one per subscription month counted from starts_on (1 Nov–31 Jan
+-- = shares on 1 Nov, 1 Dec, 1 Jan). A share is earned on the day its month
+-- starts. The last share takes the rounding remainder, so the shares add
+-- up to the exact amount (833.33 + 833.33 + 833.34 = 2,500).
 create or replace function coach_earnings(p_from date, p_to date, p_coach uuid default null)
 returns table (coach_id uuid, trainee_id uuid, subscription_id uuid, amount_egp numeric)
 language sql stable as $$
   select s.coach_id, s.trainee_id, s.id,
-         round(s.amount_egp * (least(s.ends_on, p_to) - greatest(s.starts_on, p_from) + 1)
-                            / (s.ends_on - s.starts_on + 1), 2)
+         sum(case when k = m.n - 1 then s.amount_egp - round(s.amount_egp / m.n, 2) * (m.n - 1)
+                  else round(s.amount_egp / m.n, 2) end)
   from subscriptions s
-  where s.starts_on <= p_to and s.ends_on >= p_from
-    and (p_coach is null or s.coach_id = p_coach);
+  cross join lateral (select (extract(year from age(s.ends_on, s.starts_on)) * 12
+                              + extract(month from age(s.ends_on, s.starts_on)))::int + 1 as n) m
+  cross join lateral generate_series(0, m.n - 1) k
+  where (s.starts_on + make_interval(months => k))::date between p_from and p_to
+    and (p_coach is null or s.coach_id = p_coach)
+  group by s.coach_id, s.trainee_id, s.id;
 $$;
 
 -- Admin dashboard: active trainees per coach
@@ -1888,7 +1893,6 @@ create policy subscriptions_read_own on subscriptions for select to authenticate
 -- 19. STORAGE (private buckets; the app shows short-lived signed URLs)
 -- =====================================================================
 -- milestone-images/<trainee_id>/<file>   female image rule
--- chat-images/<conversation_id>/<file>   chat participants
 -- certificates/<coach_id>/<file>         the coach and admins
 -- avatars/<user_id>/<file>               anyone who can see the profile
 create policy "milestone images read" on storage.objects for select to authenticated
@@ -1897,15 +1901,6 @@ create policy "milestone images read" on storage.objects for select to authentic
 create policy "milestone images upload" on storage.objects for insert to authenticated
   with check (bucket_id = 'milestone-images'
               and private.try_uuid((storage.foldername(name))[1]) = (select auth.uid()));
-
-create policy "chat images read" on storage.objects for select to authenticated
-  using (bucket_id = 'chat-images'
-         and exists (select 1 from conversations c
-                     where c.id = private.try_uuid((storage.foldername(name))[1])));
-create policy "chat images upload" on storage.objects for insert to authenticated
-  with check (bucket_id = 'chat-images'
-              and exists (select 1 from conversations c
-                          where c.id = private.try_uuid((storage.foldername(name))[1])));
 
 create policy "certificates read" on storage.objects for select to authenticated
   using (bucket_id = 'certificates'
