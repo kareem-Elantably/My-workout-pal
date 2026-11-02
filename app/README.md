@@ -3,7 +3,7 @@
 One app for trainees, coaches and admins, backed by the Supabase project in
 `../supabase`. Arabic (right-to-left) and English.
 
-> "Fitness App" and `com.myworkoutpal.fitness_app` are placeholders until the
+> "Fitness App" and `com.myworkoutpal.fitnessapp` are placeholders until the
 > final name is chosen. See "Renaming" below.
 
 ## Run it
@@ -23,13 +23,24 @@ flutter run --dart-define=SUPABASE_URL=https://<ref>.supabase.co \
             --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 ```
 
+**Email links** (confirm sign-up, reset password) open the app. Supabase only
+sends users to allowed addresses, so add this under **Authentication -> URL
+Configuration -> Redirect URLs**:
+
+```
+com.myworkoutpal.fitnessapp://auth-callback
+```
+
 Only the **publishable** key belongs in the app; access is enforced by
 row-level security. Never put the secret key or the database password here.
 
 ## What works so far
 
 - Welcome screen with separate trainee and coach entry points, and a language switch.
-- Sign-up (profile info, consents) and log-in.
+- Sign-up (profile info, required mobile number, consents) and log-in, linked
+  to each other, with a show/hide toggle on passwords.
+- Forgot password: the emailed link opens the app on a "set a new password"
+  screen. The sign-up confirmation link also opens the app and signs in.
   - If email confirmation is on, the app shows "check your email".
   - Weight and consents are kept in the sign-up metadata until onboarding is submitted.
 - Sign-up questions loaded from the database, one section per step, saved per step so the user can resume.
@@ -67,8 +78,11 @@ Change these, then run `flutter clean`:
 - the display name: `appName` in both `.arb` files, `android:label` in
   `android/app/src/main/AndroidManifest.xml`, `CFBundleDisplayName` in
   `ios/Runner/Info.plist`
-- the app ID: `applicationId` and `namespace` in `android/app/build.gradle.kts`
-  (and the Kotlin package folder), and `PRODUCT_BUNDLE_IDENTIFIER` in
-  `ios/Runner.xcodeproj/project.pbxproj`
+- the app ID (same on both platforms): `applicationId` and `namespace` in
+  `android/app/build.gradle.kts` (and the Kotlin package folder), and
+  `PRODUCT_BUNDLE_IDENTIFIER` in `ios/Runner.xcodeproj/project.pbxproj`
+- the email-link scheme, which follows the app ID: `Env.authCallback`, the
+  intent filter in `AndroidManifest.xml`, `CFBundleURLSchemes` in
+  `Info.plist`, and the redirect URL in Supabase (below)
 
 Do this before setting up Firebase, which registers the app ID.

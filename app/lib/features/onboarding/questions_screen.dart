@@ -6,7 +6,9 @@ import '../../core/models.dart';
 import '../../core/providers.dart';
 import '../../core/ui.dart';
 import '../../router/redirect.dart';
+import 'certificates_screen.dart';
 import 'question_field.dart';
+import 'sign_out_action.dart';
 
 /// The sign-up questions for the user's role, one section per step. Each
 /// step is saved when the user moves on, so a closed app resumes where it
@@ -29,6 +31,8 @@ class _QuestionsScreenState extends ConsumerState<QuestionsScreen> {
 
   SessionData get _session => (ref.read(sessionProvider).requireValue as SignedIn).data;
 
+  bool get _isCoach => _session.signupRole == AppRole.coach;
+
   @override
   void dispose() {
     _scroll.dispose();
@@ -44,8 +48,8 @@ class _QuestionsScreenState extends ConsumerState<QuestionsScreen> {
     ]);
     _steps = results[0] as List<QuestionStep>;
     _answers.addAll(results[1] as Map<String, Object?>);
-    if (_steps.isEmpty && mounted) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _finish());
+    if (_steps.isEmpty && !_isCoach && mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _submitTrainee());
     }
   }
 
@@ -65,19 +69,27 @@ class _QuestionsScreenState extends ConsumerState<QuestionsScreen> {
     return meals is num ? meals.toInt().clamp(1, 8) : null;
   }
 
+  void _previous() {
+    setState(() => _index--);
+    _scroll.jumpTo(0);
+  }
+
   Future<void> _next() async {
     if (!_formKey.currentState!.validate()) return;
+    FocusScope.of(context).unfocus();
     setState(() => _busy = true);
     try {
       final step = _steps[_index];
       await ref.read(onboardingRepositoryProvider).saveAnswers(_session.userId, {
         for (final question in step.questions) question.id: _normalized(_answers[question.id]),
       });
-      if (_index == _steps.length - 1) {
-        await _finish();
-      } else {
+      if (_index < _steps.length - 1) {
         setState(() => _index++);
         _scroll.jumpTo(0);
+      } else if (_isCoach) {
+        if (mounted) await context.push(Routes.certificates); // back returns to the last step
+      } else {
+        await _submitTrainee();
       }
     } catch (e) {
       if (mounted) showError(context, e);
@@ -92,13 +104,8 @@ class _QuestionsScreenState extends ConsumerState<QuestionsScreen> {
     return value;
   }
 
-  Future<void> _finish() async {
-    final session = _session;
-    if (session.signupRole == AppRole.coach) {
-      if (mounted) context.go(Routes.certificates);
-      return;
-    }
-    await ref.read(onboardingRepositoryProvider).submitApplication(session, AppRole.trainee);
+  Future<void> _submitTrainee() async {
+    await ref.read(onboardingRepositoryProvider).submitApplication(_session, AppRole.trainee);
     await ref.read(sessionProvider.notifier).refresh(); // the router moves on to the waiting screen
   }
 
@@ -108,9 +115,12 @@ class _QuestionsScreenState extends ConsumerState<QuestionsScreen> {
     return FutureBuilder(
       future: _loading,
       builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.done && !snapshot.hasError && _steps.isEmpty && _isCoach) {
+          return const CertificatesScreen(); // no coach questions: straight to certificates
+        }
         if (snapshot.connectionState != ConnectionState.done || _steps.isEmpty) {
           return Scaffold(
-            appBar: AppBar(),
+            appBar: AppBar(actions: const [SignOutAction()]),
             body: snapshot.hasError
                 ? ErrorRetry(error: snapshot.error!, onRetry: () => setState(() => _loading = _load()))
                 : const Center(child: CircularProgressIndicator()),
@@ -119,64 +129,39 @@ class _QuestionsScreenState extends ConsumerState<QuestionsScreen> {
         final step = _steps[_index];
         final section = step.section;
         final isLast = _index == _steps.length - 1;
-        final willSubmit = isLast && _session.signupRole == AppRole.trainee;
         return PopScope(
           canPop: _index == 0,
           onPopInvokedWithResult: (didPop, _) {
-            if (!didPop) setState(() => _index--);
+            if (!didPop) _previous();
           },
-          child: Scaffold(
-            appBar: AppBar(
-              title: Text(section == null ? '' : localized(context, section.titleEn, section.titleAr)),
-              bottom: PreferredSize(
-                preferredSize: const Size.fromHeight(4),
-                child: LinearProgressIndicator(value: (_index + 1) / _steps.length),
-              ),
+          child: FormScaffold(
+            title: section == null ? '' : localized(context, section.titleEn, section.titleAr),
+            formKey: _formKey,
+            scrollController: _scroll,
+            progress: (_index + 1) / _steps.length,
+            automaticallyImplyLeading: false,
+            actions: const [SignOutAction()],
+            leading: _index == 0
+                ? null
+                : OutlinedButton(onPressed: _busy ? null : _previous, child: Text(l10n.back)),
+            primary: BusyButton(
+              label: isLast && !_isCoach ? l10n.submit : l10n.next,
+              busy: _busy,
+              onPressed: _next,
             ),
-            body: Form(
-              key: _formKey,
-              child: ListView.separated(
-                controller: _scroll,
-                padding: const EdgeInsets.all(24),
-                itemCount: step.questions.length + 1,
-                separatorBuilder: (_, _) => const SizedBox(height: 24),
-                itemBuilder: (context, i) {
-                  if (i == 0) {
-                    return Text(l10n.stepOf(_index + 1, _steps.length), style: Theme.of(context).textTheme.labelLarge);
-                  }
-                  final question = step.questions[i - 1];
-                  return QuestionField(
-                    key: ValueKey(question.id),
-                    question: question,
-                    value: _answers[question.id],
-                    timeSlots: question.type == AnswerType.timeList ? _mealSlots : null,
-                    onChanged: (value) => setState(() => _answers[question.id] = value),
-                  );
-                },
-              ),
-            ),
-            bottomNavigationBar: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
-                child: Row(
-                  children: [
-                    if (_index > 0) ...[
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: _busy ? null : () => setState(() => _index--),
-                          child: Text(l10n.back),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                    ],
-                    Expanded(
-                      flex: 2,
-                      child: BusyButton(label: willSubmit ? l10n.submit : l10n.next, busy: _busy, onPressed: _next),
-                    ),
-                  ],
+            children: [
+              Text(l10n.stepOf(_index + 1, _steps.length), style: Theme.of(context).textTheme.labelLarge),
+              for (final question in step.questions) ...[
+                const SizedBox(height: 24),
+                QuestionField(
+                  key: ValueKey(question.id),
+                  question: question,
+                  value: _answers[question.id],
+                  timeSlots: question.type == AnswerType.timeList ? _mealSlots : null,
+                  onChanged: (value) => setState(() => _answers[question.id] = value),
                 ),
-              ),
-            ),
+              ],
+            ],
           ),
         );
       },

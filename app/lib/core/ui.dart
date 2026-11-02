@@ -95,6 +95,137 @@ class BusyButton extends StatelessWidget {
       );
 }
 
+/// Standard layout for form screens: scrolling content, and the primary
+/// action pinned to the bottom, above the keyboard, always in the same place.
+/// [leading] (e.g. a Back button) sits before the primary button, which
+/// mirrors correctly in right-to-left; [secondary] is a text link below it.
+class FormScaffold extends StatelessWidget {
+  const FormScaffold({
+    super.key,
+    required this.title,
+    required this.children,
+    required this.primary,
+    this.leading,
+    this.secondary,
+    this.actions,
+    this.automaticallyImplyLeading = true,
+    this.progress,
+    this.formKey,
+    this.scrollController,
+  });
+
+  final String title;
+  final List<Widget> children;
+  final Widget primary;
+  final Widget? leading;
+  final Widget? secondary;
+  final List<Widget>? actions;
+  final bool automaticallyImplyLeading;
+
+  /// 0..1, shown as a thin bar under the app bar for multi-step flows.
+  final double? progress;
+  final GlobalKey<FormState>? formKey;
+  final ScrollController? scrollController;
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        appBar: AppBar(
+          title: Text(title),
+          actions: actions,
+          automaticallyImplyLeading: automaticallyImplyLeading,
+          bottom: progress == null
+              ? null
+              : PreferredSize(preferredSize: const Size.fromHeight(4), child: LinearProgressIndicator(value: progress)),
+        ),
+        body: Form(
+          key: formKey,
+          child: Column(
+            children: [
+              Expanded(
+                child: ListView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                  children: children,
+                ),
+              ),
+              Material(
+                elevation: 3,
+                child: SafeArea(
+                  top: false,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 12, 24, 12),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          children: [
+                            if (leading != null) ...[Expanded(child: leading!), const SizedBox(width: 12)],
+                            Expanded(flex: 2, child: primary),
+                          ],
+                        ),
+                        if (secondary != null) Padding(padding: const EdgeInsets.only(top: 4), child: secondary!),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+}
+
+/// Password input with a show/hide toggle.
+class PasswordField extends StatefulWidget {
+  const PasswordField({
+    super.key,
+    required this.controller,
+    required this.label,
+    this.helperText,
+    this.validator,
+    this.textInputAction = TextInputAction.done,
+    this.onSubmitted,
+    this.isNew = false,
+  });
+
+  final TextEditingController controller;
+  final String label;
+  final String? helperText;
+  final FormFieldValidator<String>? validator;
+  final TextInputAction textInputAction;
+  final ValueChanged<String>? onSubmitted;
+
+  /// A password being created (autofill suggests a strong one).
+  final bool isNew;
+
+  @override
+  State<PasswordField> createState() => _PasswordFieldState();
+}
+
+class _PasswordFieldState extends State<PasswordField> {
+  bool _hidden = true;
+
+  @override
+  Widget build(BuildContext context) => TextFormField(
+        controller: widget.controller,
+        obscureText: _hidden,
+        autofillHints: [widget.isNew ? AutofillHints.newPassword : AutofillHints.password],
+        textInputAction: widget.textInputAction,
+        onFieldSubmitted: widget.onSubmitted,
+        validator: widget.validator,
+        decoration: InputDecoration(
+          labelText: widget.label,
+          helperText: widget.helperText,
+          suffixIcon: IconButton(
+            icon: Icon(_hidden ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+            tooltip: _hidden ? context.l10n.showPassword : context.l10n.hidePassword,
+            onPressed: () => setState(() => _hidden = !_hidden),
+          ),
+        ),
+      );
+}
+
 /// Switches the UI language; shown on screens before and after sign-in.
 class LanguageButton extends StatelessWidget {
   const LanguageButton({super.key, required this.current, required this.onSelected});

@@ -6,6 +6,7 @@ import '../../core/models.dart';
 import '../../core/providers.dart';
 import '../../core/ui.dart';
 import '../../data/onboarding_repository.dart';
+import 'sign_out_action.dart';
 
 /// Coach sign-up: upload certificates for the admin to review, then submit.
 class CertificatesScreen extends ConsumerStatefulWidget {
@@ -47,19 +48,29 @@ class _CertificatesScreenState extends ConsumerState<CertificatesScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.certificatesTitle)),
-      body: FutureBuilder(
-        future: _certificates,
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return ErrorRetry(error: snapshot.error!, onRetry: () => setState(() => _certificates = _load()));
-          }
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-          final certificates = snapshot.data!;
-          return ListView(
-            padding: const EdgeInsets.all(24),
-            children: [
+    return FutureBuilder(
+      future: _certificates,
+      builder: (context, snapshot) {
+        final certificates = snapshot.data;
+        return FormScaffold(
+          title: l10n.certificatesTitle,
+          actions: const [SignOutAction()],
+          primary: BusyButton(
+            label: l10n.submit,
+            busy: _submitting,
+            // Enabled even when empty, so tapping explains what's missing.
+            onPressed: certificates == null
+                ? null
+                : certificates.isEmpty
+                    ? () => showMessage(context, l10n.needOneCertificate)
+                    : _submit,
+          ),
+          children: [
+            if (snapshot.hasError)
+              ErrorRetry(error: snapshot.error!, onRetry: () => setState(() => _certificates = _load()))
+            else if (certificates == null)
+              const Center(child: CircularProgressIndicator())
+            else ...[
               Text(l10n.certificatesBody, style: Theme.of(context).textTheme.bodyLarge),
               const SizedBox(height: 16),
               for (final certificate in certificates)
@@ -72,21 +83,10 @@ class _CertificatesScreenState extends ConsumerState<CertificatesScreen> {
                 ),
               const SizedBox(height: 8),
               OutlinedButton.icon(onPressed: _add, icon: const Icon(Icons.add), label: Text(l10n.addCertificate)),
-              const SizedBox(height: 24),
-              BusyButton(
-                label: l10n.submit,
-                busy: _submitting,
-                onPressed: certificates.isEmpty ? null : _submit,
-              ),
-              if (certificates.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Text(l10n.needOneCertificate, textAlign: TextAlign.center),
-                ),
             ],
-          );
-        },
-      ),
+          ],
+        );
+      },
     );
   }
 }

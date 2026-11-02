@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../core/env.dart';
 import '../core/models.dart';
 
 class SignUpForm {
@@ -65,11 +66,16 @@ class AuthRepository {
       email: form.email.trim(),
       password: form.password,
       data: form.toMetadata(),
+      emailRedirectTo: Env.authCallback,
     );
     return response.session != null;
   }
 
-  Future<void> sendPasswordReset(String email) => _client.auth.resetPasswordForEmail(email.trim());
+  /// The emailed link opens the app, which then asks for a new password.
+  Future<void> sendPasswordReset(String email) =>
+      _client.auth.resetPasswordForEmail(email.trim(), redirectTo: Env.authCallback);
+
+  Future<void> updatePassword(String password) => _client.auth.updateUser(UserAttributes(password: password));
 
   Future<void> signOut() => _client.auth.signOut();
 }

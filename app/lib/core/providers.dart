@@ -44,6 +44,9 @@ class SessionNotifier extends AsyncNotifier<AuthSession> {
   Future<AuthSession> build() async {
     final subscription = ref.watch(authRepositoryProvider).authChanges().listen((change) {
       switch (change.event) {
+        case AuthChangeEvent.passwordRecovery:
+          ref.read(passwordRecoveryProvider.notifier).start();
+          unawaited(refresh());
         case AuthChangeEvent.signedIn || AuthChangeEvent.signedOut || AuthChangeEvent.userUpdated:
           unawaited(refresh());
         default:
@@ -66,6 +69,19 @@ class SessionNotifier extends AsyncNotifier<AuthSession> {
 }
 
 final sessionProvider = AsyncNotifierProvider<SessionNotifier, AuthSession>(SessionNotifier.new);
+
+/// True after the user opens a password-reset link, until they set a new
+/// password (or leave); the router keeps them on the reset screen meanwhile.
+class PasswordRecoveryNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void start() => state = true;
+
+  void finish() => state = false;
+}
+
+final passwordRecoveryProvider = NotifierProvider<PasswordRecoveryNotifier, bool>(PasswordRecoveryNotifier.new);
 
 /// The role the app is used as, for people with several (admin + coach).
 class ActiveRoleNotifier extends Notifier<AppRole?> {

@@ -20,7 +20,14 @@ void main() {
     const signedOut = SignedOut();
 
     test('can use the public screens', () {
-      for (final location in [Routes.welcome, Routes.login, Routes.checkEmail, '/signup/trainee', '/signup/coach']) {
+      for (final location in [
+        Routes.welcome,
+        Routes.login,
+        Routes.forgotPassword,
+        Routes.checkEmail,
+        Routes.signup(AppRole.trainee),
+        Routes.signup(AppRole.coach),
+      ]) {
         expect(go(signedOut, location), isNull, reason: location);
       }
     });
@@ -64,6 +71,16 @@ void main() {
         applications: [application(AppRole.trainee, ApplicationStatus.pending)],
       ));
       expect(go(session, Routes.waiting), Routes.onboarding);
+    });
+  });
+
+  group('password recovery', () {
+    test('keeps the user on the new-password screen until it is set', () {
+      final session = SignedIn(sessionData(roles: {AppRole.trainee}));
+      String? recover(String location) =>
+          resolveRedirect(session: session, selectedRole: null, location: location, passwordRecovery: true);
+      expect(recover('/trainee'), Routes.resetPassword);
+      expect(recover(Routes.resetPassword), isNull);
     });
   });
 

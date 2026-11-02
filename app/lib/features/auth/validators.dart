@@ -14,6 +14,28 @@ String? validatePassword(BuildContext context, String? value) {
   return value.length < 8 ? context.l10n.passwordTooShort : null;
 }
 
+/// A mobile number in international form: Egyptian mobiles may be typed
+/// locally (01012345678 -> +201012345678); others need their country code.
+/// Spaces, dashes, brackets and Arabic-Indic digits are accepted. Null when
+/// the input isn't a valid number.
+String? normalizePhone(String? value) {
+  if (value == null) return null;
+  const arabicDigits = '٠١٢٣٤٥٦٧٨٩';
+  var phone = value.trim().split('').map((char) {
+    final index = arabicDigits.indexOf(char);
+    return index >= 0 ? '$index' : char;
+  }).join().replaceAll(RegExp(r'[\s\-().]'), '');
+  if (phone.startsWith('00')) phone = '+${phone.substring(2)}';
+  if (RegExp(r'^01[0125]\d{8}$').hasMatch(phone)) return '+2$phone';
+  if (RegExp(r'^\+\d{8,15}$').hasMatch(phone)) return phone;
+  return null;
+}
+
+String? validatePhone(BuildContext context, String? value) {
+  if (value == null || value.trim().isEmpty) return context.l10n.required;
+  return normalizePhone(value) == null ? context.l10n.invalidPhone : null;
+}
+
 /// Parses Western or Arabic-Indic digits ("٧٢٫٥" -> 72.5).
 num? parseNumber(String? value) {
   if (value == null) return null;

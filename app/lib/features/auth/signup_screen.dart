@@ -47,6 +47,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   }
 
   Future<void> _pickDateOfBirth(FormFieldState<DateTime> field) async {
+    FocusScope.of(context).unfocus();
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
@@ -74,14 +75,14 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       dateOfBirth: _dateOfBirth,
       heightCm: parseNumber(_height.text),
       weightKg: parseNumber(_weight.text),
-      phone: _phone.text.trim(),
+      phone: normalizePhone(_phone.text),
       consents: ['terms', 'privacy', if (_isTrainee) 'health_data'],
     );
     try {
       final signedIn = await ref.read(authRepositoryProvider).signUp(form);
       // Signed in: the session listener moves on to the sign-up questions.
       if (!signedIn && mounted) {
-        context.go(Uri(path: Routes.checkEmail, queryParameters: {'email': form.email}).toString());
+        context.go(Uri(path: Routes.checkEmail, queryParameters: {'email': form.email.trim()}).toString());
       }
     } on AuthException catch (e) {
       if (mounted) e.statusCode == null ? showError(context, e) : showMessage(context, e.message);
@@ -96,122 +97,124 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final dateFormat = DateFormat.yMMMd(Localizations.localeOf(context).toString());
-    return Scaffold(
-      appBar: AppBar(title: Text(_isTrainee ? l10n.signupTraineeTitle : l10n.signupCoachTitle)),
-      body: SafeArea(
-        child: Form(
-          key: _form,
-          child: ListView(
-            padding: const EdgeInsets.all(24),
-            children: [
-              TextFormField(
-                controller: _name,
-                decoration: InputDecoration(labelText: l10n.fullName),
-                textCapitalization: TextCapitalization.words,
-                autofillHints: const [AutofillHints.name],
-                validator: (value) => (value == null || value.trim().isEmpty) ? l10n.required : null,
+    const gap = SizedBox(height: 16);
+    return AutofillGroup(
+      child: FormScaffold(
+        title: _isTrainee ? l10n.signupTraineeTitle : l10n.signupCoachTitle,
+        formKey: _form,
+        primary: BusyButton(label: l10n.createAccount, busy: _busy, onPressed: _submit),
+        secondary: TextButton(onPressed: () => context.go(Routes.login), child: Text(l10n.haveAccountLogin)),
+        children: [
+          TextFormField(
+            controller: _name,
+            decoration: InputDecoration(labelText: l10n.fullName),
+            textCapitalization: TextCapitalization.words,
+            textInputAction: TextInputAction.next,
+            autofillHints: const [AutofillHints.name],
+            validator: (value) => (value == null || value.trim().isEmpty) ? l10n.required : null,
+          ),
+          gap,
+          FormField<String>(
+            validator: (_) => _gender == null ? l10n.required : null,
+            builder: (field) => InputDecorator(
+              decoration: InputDecoration(labelText: l10n.gender, errorText: field.errorText),
+              child: SegmentedButton<String>(
+                segments: [
+                  ButtonSegment(value: 'male', label: Text(l10n.male), icon: const Icon(Icons.male)),
+                  ButtonSegment(value: 'female', label: Text(l10n.female), icon: const Icon(Icons.female)),
+                ],
+                selected: {?_gender},
+                emptySelectionAllowed: true,
+                onSelectionChanged: (selection) {
+                  setState(() => _gender = selection.firstOrNull);
+                  field.didChange(_gender);
+                },
               ),
-              const SizedBox(height: 16),
-              FormField<String>(
-                validator: (_) => _gender == null ? l10n.required : null,
-                builder: (field) => InputDecorator(
-                  decoration: InputDecoration(labelText: l10n.gender, errorText: field.errorText),
-                  child: SegmentedButton<String>(
-                    segments: [
-                      ButtonSegment(value: 'male', label: Text(l10n.male), icon: const Icon(Icons.male)),
-                      ButtonSegment(value: 'female', label: Text(l10n.female), icon: const Icon(Icons.female)),
-                    ],
-                    selected: {?_gender},
-                    emptySelectionAllowed: true,
-                    onSelectionChanged: (selection) {
-                      setState(() => _gender = selection.firstOrNull);
-                      field.didChange(_gender);
-                    },
+            ),
+          ),
+          if (_isTrainee) ...[
+            gap,
+            FormField<DateTime>(
+              validator: (_) => _dateOfBirth == null ? l10n.required : null,
+              builder: (field) => InkWell(
+                onTap: () => _pickDateOfBirth(field),
+                child: InputDecorator(
+                  decoration: InputDecoration(
+                    labelText: l10n.dateOfBirth,
+                    errorText: field.errorText,
+                    suffixIcon: const Icon(Icons.calendar_today_outlined),
                   ),
+                  child: Text(_dateOfBirth == null ? l10n.pickDate : dateFormat.format(_dateOfBirth!)),
                 ),
               ),
-              if (_isTrainee) ...[
-                const SizedBox(height: 16),
-                FormField<DateTime>(
-                  validator: (_) => _dateOfBirth == null ? l10n.required : null,
-                  builder: (field) => InkWell(
-                    onTap: () => _pickDateOfBirth(field),
-                    child: InputDecorator(
-                      decoration: InputDecoration(
-                        labelText: l10n.dateOfBirth,
-                        errorText: field.errorText,
-                        suffixIcon: const Icon(Icons.calendar_today_outlined),
-                      ),
-                      child: Text(_dateOfBirth == null ? l10n.pickDate : dateFormat.format(_dateOfBirth!)),
-                    ),
+            ),
+            gap,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _height,
+                    decoration: InputDecoration(labelText: l10n.heightCm),
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    textInputAction: TextInputAction.next,
+                    validator: (value) => validateNumber(context, value, required: true, min: 100, max: 250),
                   ),
                 ),
-                const SizedBox(height: 16),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _height,
-                        decoration: InputDecoration(labelText: l10n.heightCm),
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        validator: (value) => validateNumber(context, value, required: true, min: 100, max: 250),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _weight,
-                        decoration: InputDecoration(labelText: l10n.weightKg),
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        validator: (value) => validateNumber(context, value, required: true, min: 30, max: 300),
-                      ),
-                    ),
-                  ],
+                const SizedBox(width: 16),
+                Expanded(
+                  child: TextFormField(
+                    controller: _weight,
+                    decoration: InputDecoration(labelText: l10n.weightKg),
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    textInputAction: TextInputAction.next,
+                    validator: (value) => validateNumber(context, value, required: true, min: 30, max: 300),
+                  ),
                 ),
               ],
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _phone,
-                decoration: InputDecoration(labelText: l10n.phone),
-                keyboardType: TextInputType.phone,
-                autofillHints: const [AutofillHints.telephoneNumber],
-                textDirection: TextDirection.ltr,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _email,
-                decoration: InputDecoration(labelText: l10n.email),
-                keyboardType: TextInputType.emailAddress,
-                autofillHints: const [AutofillHints.email],
-                textDirection: TextDirection.ltr,
-                validator: (value) => validateEmail(context, value),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _password,
-                decoration: InputDecoration(labelText: l10n.password, helperText: l10n.passwordHint),
-                obscureText: true,
-                autofillHints: const [AutofillHints.newPassword],
-                validator: (value) => validatePassword(context, value),
-              ),
-              const SizedBox(height: 16),
-              _ConsentCheckbox(
-                label: l10n.acceptTerms,
-                value: _acceptTerms,
-                onChanged: (value) => setState(() => _acceptTerms = value),
-              ),
-              if (_isTrainee)
-                _ConsentCheckbox(
-                  label: l10n.acceptHealthData,
-                  value: _acceptHealthData,
-                  onChanged: (value) => setState(() => _acceptHealthData = value),
-                ),
-              const SizedBox(height: 24),
-              BusyButton(label: l10n.createAccount, busy: _busy, onPressed: _submit),
-            ],
+            ),
+          ],
+          gap,
+          TextFormField(
+            controller: _phone,
+            decoration: InputDecoration(labelText: l10n.phone, hintText: l10n.phoneHint, hintTextDirection: TextDirection.ltr),
+            keyboardType: TextInputType.phone,
+            textInputAction: TextInputAction.next,
+            autofillHints: const [AutofillHints.telephoneNumber],
+            textDirection: TextDirection.ltr,
+            validator: (value) => validatePhone(context, value),
           ),
-        ),
+          gap,
+          TextFormField(
+            controller: _email,
+            decoration: InputDecoration(labelText: l10n.email),
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+            autofillHints: const [AutofillHints.email],
+            textDirection: TextDirection.ltr,
+            validator: (value) => validateEmail(context, value),
+          ),
+          gap,
+          PasswordField(
+            controller: _password,
+            label: l10n.password,
+            helperText: l10n.passwordHint,
+            isNew: true,
+            validator: (value) => validatePassword(context, value),
+          ),
+          gap,
+          _ConsentCheckbox(
+            label: l10n.acceptTerms,
+            value: _acceptTerms,
+            onChanged: (value) => setState(() => _acceptTerms = value),
+          ),
+          if (_isTrainee)
+            _ConsentCheckbox(
+              label: l10n.acceptHealthData,
+              value: _acceptHealthData,
+              onChanged: (value) => setState(() => _acceptHealthData = value),
+            ),
+        ],
       ),
     );
   }
