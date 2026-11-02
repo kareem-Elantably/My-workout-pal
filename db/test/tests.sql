@@ -149,7 +149,7 @@ select t.check(t.fails($$insert into auth.users values (gen_random_uuid(), '{"fu
                'sign-up without gender is rejected');
 
 set role anon;
-select t.check((select count(*) from profiles) = 0, 'anon sees no profiles');
+select t.check(t.fails('select count(*) from profiles'), 'signed-out users (anon) cannot read any table');
 reset role;
 
 set role authenticated;

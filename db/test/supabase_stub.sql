@@ -33,8 +33,8 @@ alter table storage.objects enable row level security;
 grant usage on schema storage to authenticated;
 grant all on storage.objects to authenticated;
 
--- Supabase grants every new public table, sequence and function to the API roles.
-grant usage on schema public to anon, authenticated;
-alter default privileges in schema public grant all on tables to anon, authenticated;
-alter default privileges in schema public grant all on sequences to anon, authenticated;
-alter default privileges in schema public grant execute on functions to anon, authenticated;
+-- Like newer Supabase projects: the API roles get no table access by
+-- default (the migrations grant it), and functions aren't executable by
+-- everyone.
+revoke create on schema public from public;
+alter default privileges revoke execute on functions from public;
