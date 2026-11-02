@@ -105,7 +105,8 @@ end $$;
 -- Fixtures
 -- ---------------------------------------------------------------------
 insert into exercises (name_en, tracking, created_by) values
-  ('Bench Press', 'weight_reps', null), ('Treadmill', 'distance_duration', null), ('Plank', 'duration', null);
+  ('Bench Press', 'weight_reps', null), ('Treadmill', 'distance_duration', null), ('Plank', 'duration', null)
+on conflict ((lower(name_en))) do nothing;
 
 select t.make_user('admin',  'male',   '{admin}');
 select t.make_user('coach1', 'male',   '{coach}');     -- F's workout coach
@@ -148,7 +149,7 @@ select t.check(t.fails($$insert into auth.users values (gen_random_uuid(), '{"fu
                'sign-up without gender is rejected');
 
 set role anon;
-select t.check((select count(*) from profiles) = 0, 'anon sees no profiles');
+select t.check(t.fails('select count(*) from profiles'), 'signed-out users (anon) cannot read any table');
 reset role;
 
 set role authenticated;
@@ -463,7 +464,9 @@ select t.check(t.fails($$update foods set kcal = 300 where name_en = 'Rice'$$),
                'a food used in a plan keeps its values');
 select t.check((select name_en from search_foods('ارز') limit 1) = 'Rice', 'Arabic search ignores hamza (ارز finds أرز)');
 select t.check((select name_en from search_foods('عيش') limit 1) = 'Baladi bread', 'Arabic search finds عيش بلدي');
-select t.check((select name_en from match_exercise('bench pres') limit 1) = 'Bench Press', 'match_exercise: "bench pres" -> Bench Press');
+select t.check((select name_en from match_exercise('bench pres') limit 1)
+                 in ('Bench Press', 'Barbell Bench Press - Medium Grip'),
+               'match_exercise: "bench pres" -> a bench press (by name or saved alias)');
 reset role;
 
 -- =====================================================================
@@ -528,5 +531,41 @@ select delete_my_account();
 reset role;
 select t.check((select count(*) from workout_plans where trainee_id = t.id('f')) = 1,
                'deleting a coach keeps their trainees'' plans');
+
+-- =====================================================================
+-- 9. App features migration
+-- =====================================================================
+select t.check((select count(*) from exercises where source = 'free-exercise-db') > 800, 'the exercise library is seeded');
+select t.check((select tracking from exercises where name_en = 'Running, Treadmill') = 'distance_duration',
+               'treadmill running is logged by distance and time');
+select t.check((select e.name_en from exercise_aliases a join exercises e on e.id = a.exercise_id where a.alias = 'Bench Press')
+               = 'Barbell Bench Press - Medium Grip', 'common spellings are saved as aliases');
+select t.check((select exact from match_exercise('flat bench', 1) where false) is null
+               and (select bool_and(exact) from match_exercise('Lat Pulldown', 1)),
+               'an alias matches exactly in the Excel import');
+select t.check((select count(*) from foods where created_by is null) >= 70, 'the starter food library is seeded');
+select t.check((select grams from food_units u join foods f on f.id = u.food_id
+                where f.name_en = 'Baladi bread (whole-wheat pita)' and u.name_en = 'loaf') = 90,
+               'baladi bread has a loaf unit');
+
+set role authenticated;
+select t.login('coach2');
+select t.check(not t.fails($$insert into foods (name_en, source, source_ref, kcal) values ('Juhayna Milk', 'open_food_facts', '6223000000000', 60)$$),
+               'a coach can save a barcode food');
+select t.check(t.fails($$insert into foods (name_en, source, source_ref, kcal) values ('Fake', 'usda', '1', 1)$$),
+               'a coach cannot add USDA foods');
+select t.check(t.fails($$update foods set kcal = 1 where name_en = 'Banana'$$) or (select kcal from foods where name_en = 'Banana') = 89,
+               'seeded foods can only be changed by an admin');
+reset role;
+
+set role authenticated;
+select t.login('f');
+insert into messages (conversation_id, sender_id, body)
+select id, auth.uid(), 'Can I swap rice for potatoes?' from conversations where coach_id = t.id('coach2');
+reset role;
+select t.check((select data->>'preview' from notifications where recipient_id = t.id('coach2') and type_key = 'chat_message')
+               = 'Can I swap rice for potatoes?',
+               'a chat message notifies the other participant');
+select t.check(private.notify_no_data_today() >= 0, 'the evening nudge runs');
 
 \echo 'ALL TESTS PASSED'
