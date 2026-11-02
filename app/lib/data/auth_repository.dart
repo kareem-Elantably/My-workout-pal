@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/env.dart';
 import '../core/models.dart';
+import '../core/push.dart';
 
 class SignUpForm {
   const SignUpForm({
@@ -77,5 +78,16 @@ class AuthRepository {
 
   Future<void> updatePassword(String password) => _client.auth.updateUser(UserAttributes(password: password));
 
-  Future<void> signOut() => _client.auth.signOut();
+  /// Signs out and stops this phone receiving the user's pushes.
+  Future<void> signOut() async {
+    final token = Push.instance.token;
+    if (token != null) {
+      try {
+        await _client.from('device_tokens').delete().eq('token', token);
+      } catch (_) {
+        // offline: the token moves to whoever signs in next on this phone
+      }
+    }
+    await _client.auth.signOut();
+  }
 }
