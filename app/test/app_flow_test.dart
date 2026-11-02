@@ -2,6 +2,7 @@ import 'package:fitness_app/app.dart';
 import 'package:fitness_app/core/models.dart';
 import 'package:fitness_app/core/providers.dart';
 import 'package:fitness_app/data/home_repository.dart';
+import 'package:fitness_app/data/workout_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,15 +12,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'helpers.dart';
 
 void main() {
+  late Mocks mocks;
   late MockOnboardingRepository onboarding;
   late MockHomeRepository home;
   late FakeSessionNotifier session;
 
-  setUpAll(() => registerFallbackValue(sessionData()));
+  setUpAll(registerFallbacks);
 
   setUp(() {
-    onboarding = MockOnboardingRepository();
-    home = MockHomeRepository();
+    mocks = Mocks();
+    onboarding = mocks.onboarding;
+    home = mocks.home;
   });
 
   /// The whole app with a fixed session and mocked data.
@@ -31,8 +34,7 @@ void main() {
       overrides: [
         sharedPreferencesProvider.overrideWithValue(preferences),
         sessionProvider.overrideWith(() => session),
-        onboardingRepositoryProvider.overrideWithValue(onboarding),
-        homeRepositoryProvider.overrideWithValue(home),
+        ...mocks.overrides,
       ],
       child: const FitnessApp(),
     ));
@@ -110,9 +112,52 @@ void main() {
   });
 
   testWidgets('an approved trainee without plans sees that plans are being prepared', (tester) async {
-    when(() => home.today('user-1')).thenAnswer((_) async => const TodaySummary(hasPlan: false, streak: 0));
     await pumpApp(tester, SignedIn(sessionData(roles: {AppRole.trainee})));
     expect(find.text('Your plans are being prepared'), findsOneWidget);
+  });
+
+  testWidgets('today: the suggested workout, the meals, and "all done"', (tester) async {
+    when(() => mocks.workout.activePlan('user-1')).thenAnswer((_) async => sampleWorkoutPlan());
+    when(() => mocks.workout.nextWorkout('user-1')).thenAnswer(
+        (_) async => const NextWorkout(dayNumber: 1, workoutDayId: 'day-push', isPlannedRest: false, loggedToday: false));
+    when(() => mocks.workout.streak('user-1')).thenAnswer((_) async => 5);
+    when(() => mocks.nutrition.activePlan('user-1')).thenAnswer((_) async => sampleNutritionPlan());
+    when(() => mocks.nutrition.logAll(
+          traineeId: any(named: 'traineeId'),
+          meals: any(named: 'meals'),
+          existing: any(named: 'existing'),
+          day: any(named: 'day'),
+        )).thenAnswer((_) async {});
+
+    await pumpApp(tester, SignedIn(sessionData(roles: {AppRole.trainee})));
+
+    expect(find.text('5 day streak'), findsOneWidget);
+    expect(find.text('Day 1 · Push'), findsOneWidget);
+    expect(find.text('Start workout'), findsOneWidget);
+    expect(find.text('Choose another day'), findsOneWidget);
+    expect(find.text('Breakfast · 08:00'), findsOneWidget);
+    expect(find.text('A'), findsOneWidget);
+
+    await tester.tap(find.text('All done'));
+    await tester.pumpAndSettle();
+    verify(() => mocks.nutrition.logAll(
+          traineeId: 'user-1',
+          meals: any(named: 'meals'),
+          existing: any(named: 'existing'),
+          day: any(named: 'day'),
+        )).called(1);
+  });
+
+  testWidgets('a planned rest day offers "Train anyway"', (tester) async {
+    when(() => mocks.workout.activePlan('user-1')).thenAnswer((_) async => sampleWorkoutPlan());
+    when(() => mocks.workout.nextWorkout('user-1'))
+        .thenAnswer((_) async => const NextWorkout(dayNumber: 3, isPlannedRest: true, loggedToday: false));
+    await pumpApp(tester, SignedIn(sessionData(roles: {AppRole.trainee})));
+    expect(find.text('Planned rest day'), findsOneWidget);
+    await tester.tap(find.text('Train anyway'));
+    await tester.pumpAndSettle();
+    expect(find.text('Which day do you want to train?'), findsOneWidget);
+    expect(find.text('Pull'), findsOneWidget);
   });
 
   testWidgets('a coach sees trainees with what needs attention', (tester) async {

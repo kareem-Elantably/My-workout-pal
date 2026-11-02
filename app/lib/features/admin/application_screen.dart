@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/models.dart';
 import '../../core/providers.dart';
 import '../../core/ui.dart';
+import '../../core/widgets.dart';
 import '../../data/admin_repository.dart';
 import '../../data/onboarding_repository.dart';
 import '../home/profile_screen.dart';
@@ -25,7 +26,7 @@ final _certificatesProvider = FutureProvider.autoDispose.family<List<Certificate
   (ref, coachId) => ref.watch(onboardingRepositoryProvider).loadCertificates(coachId),
 );
 
-final _assignmentsProvider = FutureProvider.autoDispose.family<List<Assignment>, String>(
+final assignmentsProvider = FutureProvider.autoDispose.family<List<Assignment>, String>(
   (ref, traineeId) => ref.watch(adminRepositoryProvider).activeAssignments(traineeId),
 );
 
@@ -90,7 +91,7 @@ class _ApplicationScreenState extends ConsumerState<ApplicationScreen> {
     final role = item.application.role ?? AppRole.trainee;
     final applicant = item.applicant;
     final isTrainee = role == AppRole.trainee;
-    final hasCoach = !isTrainee || (ref.watch(_assignmentsProvider(applicant.id)).value?.isNotEmpty ?? false);
+    final hasCoach = !isTrainee || (ref.watch(assignmentsProvider(applicant.id)).value?.isNotEmpty ?? false);
 
     return Scaffold(
       appBar: AppBar(title: Text(applicant.fullName)),
@@ -98,7 +99,7 @@ class _ApplicationScreenState extends ConsumerState<ApplicationScreen> {
         padding: const EdgeInsets.all(16),
         children: [
           _ApplicantCard(applicant: applicant, role: role),
-          if (isTrainee) _AssignmentsCard(traineeId: applicant.id),
+          if (isTrainee) AssignmentsCard(traineeId: applicant.id),
           if (!isTrainee) _CertificatesCard(coachId: applicant.id),
           _AnswersCard(applicant: (role, applicant.id)),
         ],
@@ -195,10 +196,14 @@ class _ApplicantCard extends StatelessWidget {
   }
 }
 
-class _AssignmentsCard extends ConsumerWidget {
-  const _AssignmentsCard({required this.traineeId});
+/// Coaches assigned to a trainee, per scope, with "assign" where missing.
+class AssignmentsCard extends ConsumerWidget {
+  const AssignmentsCard({super.key, required this.traineeId, this.canEnd = false});
 
   final String traineeId;
+
+  /// Admins managing a trainee can end an assignment (to reassign).
+  final bool canEnd;
 
   Future<void> _assign(BuildContext context, WidgetRef ref, String scopeKey) async {
     final coaches = await ref.read(_coachesProvider.future);
@@ -216,7 +221,7 @@ class _AssignmentsCard extends ConsumerWidget {
     if (coach == null) return;
     try {
       await ref.read(adminRepositoryProvider).assignCoach(traineeId: traineeId, coachId: coach.id, scopeKey: scopeKey);
-      ref.invalidate(_assignmentsProvider(traineeId));
+      ref.invalidate(assignmentsProvider(traineeId));
     } catch (e) {
       if (context.mounted) showError(context, e);
     }
@@ -227,7 +232,7 @@ class _AssignmentsCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final assignments = ref.watch(_assignmentsProvider(traineeId));
+    final assignments = ref.watch(assignmentsProvider(traineeId));
     return _Section(
       title: context.l10n.assignedCoaches,
       children: assignments.when(
@@ -240,6 +245,20 @@ class _AssignmentsCard extends ConsumerWidget {
                   leading: const Icon(Icons.check_circle_outline),
                   title: Text(assignment.coachName),
                   subtitle: Text(_scopeLabel(context, scope)),
+                  trailing: !canEnd
+                      ? null
+                      : TextButton(
+                          onPressed: () async {
+                            if (!await confirm(context, context.l10n.endAssignmentConfirm, action: context.l10n.endAssignment)) return;
+                            try {
+                              await ref.read(adminRepositoryProvider).endAssignment(assignment.id);
+                              ref.invalidate(assignmentsProvider(traineeId));
+                            } catch (e) {
+                              if (context.mounted) showError(context, e);
+                            }
+                          },
+                          child: Text(context.l10n.endAssignment),
+                        ),
                 ),
               null => ListTile(
                   leading: const Icon(Icons.person_add_alt),

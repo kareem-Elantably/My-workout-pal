@@ -8,8 +8,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../data/admin_repository.dart';
 import '../data/auth_repository.dart';
 import '../data/home_repository.dart';
+import '../data/library_repository.dart';
+import '../data/milestone_repository.dart';
+import '../data/nutrition_repository.dart';
 import '../data/onboarding_repository.dart';
+import '../data/plan_editor_repository.dart';
 import '../data/session_repository.dart';
+import '../data/social_repository.dart';
+import '../data/workout_repository.dart';
 import 'models.dart';
 
 final supabaseClientProvider = Provider<SupabaseClient>((ref) => Supabase.instance.client);
@@ -22,6 +28,21 @@ final sessionRepositoryProvider = Provider((ref) => SessionRepository(ref.watch(
 final onboardingRepositoryProvider = Provider((ref) => OnboardingRepository(ref.watch(supabaseClientProvider)));
 final adminRepositoryProvider = Provider((ref) => AdminRepository(ref.watch(supabaseClientProvider)));
 final homeRepositoryProvider = Provider((ref) => HomeRepository(ref.watch(supabaseClientProvider)));
+final workoutRepositoryProvider = Provider((ref) => WorkoutRepository(ref.watch(supabaseClientProvider)));
+final nutritionRepositoryProvider = Provider((ref) => NutritionRepository(ref.watch(supabaseClientProvider)));
+final milestoneRepositoryProvider = Provider((ref) => MilestoneRepository(ref.watch(supabaseClientProvider)));
+final socialRepositoryProvider = Provider((ref) => SocialRepository(ref.watch(supabaseClientProvider)));
+final libraryRepositoryProvider = Provider((ref) => LibraryRepository(ref.watch(supabaseClientProvider)));
+final planEditorRepositoryProvider = Provider((ref) => PlanEditorRepository(ref.watch(supabaseClientProvider)));
+
+/// The signed-in user's id (screens below the router always have one).
+final myIdProvider = Provider<String>((ref) => (ref.watch(sessionProvider).requireValue as SignedIn).data.userId);
+
+/// The user's local "today" (date only).
+DateTime today() {
+  final now = DateTime.now();
+  return DateTime(now.year, now.month, now.day);
+}
 
 sealed class AuthSession {
   const AuthSession();

@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/providers.dart';
 import '../../core/ui.dart';
 import '../../data/home_repository.dart';
-import '../../router/redirect.dart';
+import '../shared/notifications_button.dart';
 
 final coachDashboardProvider = FutureProvider.autoDispose<List<CoachTrainee>>(
   (ref) => ref.watch(homeRepositoryProvider).coachDashboard(),
@@ -23,7 +23,7 @@ class CoachHome extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.coachHome),
-        actions: [IconButton(icon: const Icon(Icons.person_outline), onPressed: () => context.push(Routes.profile))],
+        actions: const [NotificationsButton(), ProfileButton()],
       ),
       body: trainees.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -61,6 +61,7 @@ class _TraineeTile extends StatelessWidget {
     ];
     final needsAttention = trainee.missedDays7 > 0 || trainee.milestonesDue > 0 || trainee.unreadMessages > 0;
     return ListTile(
+      onTap: () => context.push('/coach/trainees/${trainee.traineeId}'),
       leading: CircleAvatar(child: Text(trainee.fullName.characters.first)),
       title: Text(trainee.fullName),
       subtitle: Text(status.join(' · '), style: needsAttention ? TextStyle(color: theme.colorScheme.error) : null),

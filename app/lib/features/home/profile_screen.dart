@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/models.dart';
 import '../../core/providers.dart';
 import '../../core/ui.dart';
+import '../../core/widgets.dart';
 import '../../router/redirect.dart';
 
 String roleLabel(BuildContext context, AppRole role) => switch (role) {
@@ -64,6 +65,18 @@ class ProfileScreen extends ConsumerWidget {
             leading: const Icon(Icons.logout),
             title: Text(l10n.signOut),
             onTap: () => ref.read(authRepositoryProvider).signOut(),
+          ),
+          ListTile(
+            leading: Icon(Icons.delete_forever_outlined, color: Theme.of(context).colorScheme.error),
+            title: Text(l10n.deleteAccount, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            onTap: () async {
+              if (!await confirm(context, l10n.deleteAccountConfirm, action: l10n.deleteAccount)) return;
+              try {
+                await ref.read(socialRepositoryProvider).deleteAccount();
+              } catch (e) {
+                if (context.mounted) showError(context, e);
+              }
+            },
           ),
         ],
       ),

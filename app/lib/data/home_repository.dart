@@ -1,29 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class TodaySummary {
-  const TodaySummary({required this.hasPlan, required this.streak, this.workout});
-
-  final bool hasPlan;
-  final int streak;
-  final NextWorkout? workout;
-}
-
-class NextWorkout {
-  const NextWorkout({required this.dayNumber, required this.isPlannedRest, required this.loggedToday, this.dayName});
-
-  final int dayNumber;
-  final String? dayName;
-  final bool isPlannedRest;
-  final bool loggedToday;
-
-  factory NextWorkout.fromJson(Map<String, dynamic> json) => NextWorkout(
-        dayNumber: json['day_number'] as int,
-        dayName: json['day_name'] as String?,
-        isPlannedRest: json['is_planned_rest'] as bool,
-        loggedToday: json['logged_today'] as bool,
-      );
-}
-
 class CoachTrainee {
   const CoachTrainee({
     required this.traineeId,
@@ -67,21 +43,6 @@ class HomeRepository {
   HomeRepository(this._client);
 
   final SupabaseClient _client;
-
-  Future<TodaySummary> today(String traineeId) async {
-    final results = await Future.wait<dynamic>([
-      _client.from('workout_plans').select('id').eq('trainee_id', traineeId).isFilter('archived_on', null).limit(1),
-      _client.from('nutrition_plans').select('id').eq('trainee_id', traineeId).isFilter('archived_on', null).limit(1),
-      _client.rpc('next_workout_day'),
-      _client.rpc('current_streak'),
-    ]);
-    final next = (results[2] as List).cast<Map<String, dynamic>>();
-    return TodaySummary(
-      hasPlan: (results[0] as List).isNotEmpty || (results[1] as List).isNotEmpty,
-      streak: results[3] as int? ?? 0,
-      workout: next.isEmpty ? null : NextWorkout.fromJson(next.first),
-    );
-  }
 
   /// Active trainees, the ones who need attention first.
   Future<List<CoachTrainee>> coachDashboard() async {

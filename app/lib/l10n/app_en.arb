@@ -224,5 +224,479 @@
   "passwordsDontMatch": "The passwords don't match",
   "passwordUpdated": "Your password was changed.",
   "checkEmailHint": "Open the link on this phone and the app continues by itself.",
-  "goToLogin": "Log in"
+  "goToLogin": "Log in",
+  "active": "Active",
+  "activeTrainees": "{count} active trainees",
+  "@activeTrainees": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "addExercise": "Add exercise",
+  "addFood": "Add food",
+  "addMeal": "Add meal",
+  "addNote": "Add note",
+  "addOption": "Add option",
+  "addPhoto": "Add photo",
+  "addSchedule": "Repeating check-in",
+  "addSet": "Add set",
+  "addTrainingDay": "Training day",
+  "all": "All",
+  "allMealsDone": "All meals done",
+  "amountEgp": "EGP {amount}",
+  "@amountEgp": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "amountLabel": "Amount",
+  "askForCheckInNow": "Ask for a check-in now",
+  "barcodeNotFound": "Product not found. Enter its values from the label.",
+  "byCalories": "By calories",
+  "byMacro": "By macro",
+  "carbs": "Carbs",
+  "carbsShort": "C",
+  "chat": "Chat",
+  "checkIn": "Check-in",
+  "checkInDue": "Check-in due today",
+  "checkInName": "Name",
+  "checkInRequested": "Check-in requested",
+  "checkInSchedules": "Check-ins",
+  "checkInSent": "Check-in sent to your coach",
+  "checkIns": "Check-ins",
+  "chooseAnotherDay": "Choose another day",
+  "chooseAnotherFile": "Choose another file",
+  "chooseExcelFile": "Choose Excel file",
+  "chooseExercise": "Choose exercise",
+  "chooseFood": "Choose food",
+  "chooseFromGallery": "Choose from gallery",
+  "chooseWorkoutDay": "Which day do you want to train?",
+  "coachCredited": "Coach credited",
+  "coachCreditedHint": "The full amount goes to this coach",
+  "coachName": "Coach: {name}",
+  "@coachName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "coachNotes": "Notes for the trainee",
+  "compare": "Compare",
+  "cookedWeight": "≈ {grams} g cooked",
+  "@cookedWeight": {
+    "placeholders": {
+      "grams": {
+        "type": "String"
+      }
+    }
+  },
+  "couldNotReadFile": "Couldn't read that file. Use the template (.xlsx).",
+  "countsForStreak": "Counts for the streak",
+  "createAsNew": "Create as a new exercise",
+  "cycleLength": "Cycle length (days)",
+  "cycleLengthHint": "Days without training are rest days",
+  "cycleOfDays": "{count}-day cycle",
+  "@cycleOfDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dayName": "Day name",
+  "dayNameHint": "e.g. Push Day",
+  "dayTotalFirstOptions": "Day total (first options)",
+  "daysLeft": "{count, plural, =0{Ends today} =1{1 day left} other{{count} days left}}",
+  "@daysLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "delete": "Delete",
+  "deleteAccount": "Delete my account",
+  "deleteAccountConfirm": "This permanently deletes your account, logs and photos. It can't be undone.",
+  "deleteDayConfirm": "Make this day a rest day? Its exercises are removed.",
+  "deleteMealConfirm": "Delete this meal and its options?",
+  "deleteNoteConfirm": "Delete this note?",
+  "deleteOptionConfirm": "Delete this option?",
+  "deleteSubscriptionConfirm": "Delete this subscription?",
+  "didYouChangeAnything": "Did you change anything in this meal?",
+  "didYouMean": "Did you mean {name}?",
+  "@didYouMean": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "distanceMeters": "Distance (m)",
+  "distanceOrTimeRequired": "Add a distance or a time",
+  "downloadTemplate": "Download the template",
+  "durationSeconds": "Time (sec)",
+  "earnings": "Earnings",
+  "earningsByCoach": "Earnings by coach",
+  "edit": "Edit",
+  "editPlan": "Edit plan",
+  "editSubscription": "Subscription",
+  "endAssignment": "End",
+  "endAssignmentConfirm": "End this coach assignment today? The history stays.",
+  "endingSoon": "Ending soon",
+  "endsOn": "Ends on",
+  "errBadReps": "reps must look like 8-10, 12, 45s, 20 min or 2 km",
+  "errBadSets": "sets must be a number",
+  "errMissingDay": "day # is missing",
+  "errMissingDayName": "day name is missing",
+  "errMissingExercise": "exercise is missing",
+  "errMissingOrder": "order is missing",
+  "everyNDays": "{count, plural, =1{Every day} other{Every {count} days}}",
+  "@everyNDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "exerciseCount": "{count, plural, =1{1 exercise} other{{count} exercises}}",
+  "@exerciseCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "exerciseNames": "Exercise names",
+  "exerciseProgress": "Exercise progress",
+  "exercises": "Exercises",
+  "fat": "Fat",
+  "fatShort": "F",
+  "fillRequiredFields": "Fill in the required fields first",
+  "finishWorkout": "Finish workout",
+  "fixErrorsFirst": "Fix the highlighted rows in the file, then upload it again",
+  "foodA": "Food A",
+  "foodAlreadyInLibrary": "{name} is already in the library",
+  "@foodAlreadyInLibrary": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "foodB": "Food B",
+  "foodFromBarcode": "Food from barcode",
+  "foods": "Foods",
+  "fromTemplate": "From a template",
+  "grams": "g",
+  "gramsOfFoodA": "Grams of food A",
+  "gramsPerUnit": "Grams per unit",
+  "importPlan": "Import plan",
+  "kcal": "kcal",
+  "kg": "kg",
+  "km": "km",
+  "library": "Library",
+  "linkedTo": "Linked to {name}",
+  "@linkedTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "logOneSetFirst": "Log at least one set first",
+  "logSet": "Log set",
+  "logWorkoutForDay": "Log a workout for this day",
+  "loggedAs": "Logged as",
+  "logs": "Logs",
+  "makeRestDay": "Make rest day",
+  "markAllMealsDone": "All done",
+  "mealConverter": "Meal converter",
+  "mealConverterHint": "Grams for a calorie or macro target, or swap foods",
+  "mealCount": "{count, plural, =1{1 meal} other{{count} meals}}",
+  "@mealCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mealName": "Meal name",
+  "mealNameHint": "e.g. Breakfast",
+  "meals": "Meals",
+  "minutesShort": "min",
+  "months": "Months",
+  "more": "More",
+  "moveUp": "Move up",
+  "myNotes": "My notes",
+  "myPlan": "My plan",
+  "nApprovedBody": "Open the app to get started.",
+  "nApprovedTitle": "Your account is approved 🎉",
+  "nMilestoneDueBody": "Add your weight and photos.",
+  "nMilestoneUploadedTitle": "A trainee uploaded a check-in",
+  "nNoDataBody": "Log your workout and meals to keep your streak.",
+  "nNoDataTitle": "Nothing logged today",
+  "nPaymentBody": "We received EGP {amount} for {days} days.",
+  "@nPaymentBody": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "days": {
+        "type": "String"
+      }
+    }
+  },
+  "nPaymentTitle": "Payment received",
+  "nPlanReadyNutrition": "Your coach updated your nutrition plan.",
+  "nPlanReadyTitle": "Your plan is ready",
+  "nPlanReadyWorkout": "Your coach updated your workout plan.",
+  "nRejectedTitle": "Your application wasn't approved",
+  "nSubscriptionEndingAdmin": "{name}'s subscription ends in {days} days.",
+  "@nSubscriptionEndingAdmin": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "days": {
+        "type": "String"
+      }
+    }
+  },
+  "nSubscriptionEndingTitle": "Subscription ending soon",
+  "nTraineeAssignedTitle": "A new trainee was assigned to you",
+  "nameArabicOptional": "Arabic name (optional)",
+  "nameEnglish": "Name (English)",
+  "newExercise": "New exercise",
+  "newFood": "New food",
+  "newNutritionPlan": "New nutrition plan",
+  "newTemplate": "New template",
+  "newVersion": "New version",
+  "newWorkoutPlan": "New workout plan",
+  "nextDay": "Next day",
+  "nextMonth": "Next month",
+  "nextTrainee": "Next trainee",
+  "noCheckIns": "No check-ins yet",
+  "noConversations": "No conversations yet",
+  "noEarnings": "No earnings in this period",
+  "noMatch": "No match in the library",
+  "noNotes": "No notes yet",
+  "noNotifications": "No notifications",
+  "noNutritionPlan": "No nutrition plan yet",
+  "noResults": "No results",
+  "noSubscription": "No subscription recorded",
+  "noTemplates": "No templates yet",
+  "noWorkoutPlan": "No workout plan yet",
+  "noWorkoutsYet": "No workouts logged yet",
+  "notApprovedYet": "Not approved yet",
+  "notAsked": "Not asked",
+  "notEnoughData": "Not enough data yet",
+  "notUploadedYet": "Not uploaded yet",
+  "note": "Note",
+  "noteOptional": "Note (optional)",
+  "notes": "Notes",
+  "notesPrivate": "Only you can see your notes.",
+  "notificationBody": "Message (optional)",
+  "notificationSent": "Notification sent",
+  "notificationTitle": "Title",
+  "notifications": "Notifications",
+  "nutrition": "Nutrition",
+  "nutritionPlanPreparing": "Your nutrition plan is being prepared",
+  "nutritionTemplates": "Nutrition templates",
+  "offAttribution": "Barcode data © Open Food Facts contributors (ODbL)",
+  "olderThanAWeek": "Older than 7 days: read-only",
+  "optionLabel": "Option {label}",
+  "@optionLabel": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "optionName": "Option name",
+  "optional": "Optional",
+  "optionalNotInStreak": "Optional: doesn't count for the streak",
+  "overview": "Overview",
+  "people": "People",
+  "per100g": "Per 100 g",
+  "photoNotVisible": "Photos are visible only to female coaches and admins",
+  "planImported": "Plan imported",
+  "planName": "Plan name",
+  "preview": "Preview",
+  "previousDay": "Previous day",
+  "previousMonth": "Previous month",
+  "previousTrainee": "Previous trainee",
+  "progress": "Progress",
+  "protein": "Protein",
+  "proteinShort": "P",
+  "quantity": "Quantity",
+  "recordPayment": "Record payment",
+  "reminderDailyLog": "Daily log reminder",
+  "reminderMealBody": "Tap to check it off.",
+  "reminderMealTitle": "Time for {meal}",
+  "@reminderMealTitle": {
+    "placeholders": {
+      "meal": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderMilestone": "Check-in reminder",
+  "reminderMilestoneBody": "Add your weight and photos if a check-in is due.",
+  "reminderMilestoneTitle": "Check-in",
+  "reminderWorkout": "Workout reminder",
+  "reminderWorkoutBody": "Today's workout is waiting.",
+  "reminderWorkoutTitle": "Time to train 💪",
+  "reminders": "Reminders",
+  "remindersHint": "Reminders work even without internet. Tap a time to change it.",
+  "rename": "Rename",
+  "renamePlan": "Rename plan",
+  "replace": "Replace",
+  "replaceWorkoutConfirm": "You already logged another workout on this date. Replace it with this one?",
+  "repsFrom": "Reps from",
+  "repsRangeInvalid": "\"Reps to\" must be at least \"reps from\"",
+  "repsTo": "to (optional)",
+  "resolveNamesFirst": "Confirm or choose every exercise name first",
+  "restDay": "Rest day",
+  "restSeconds": "rest {seconds}s",
+  "@restSeconds": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "restSecondsLabel": "Rest (sec)",
+  "restTimer": "Rest {time}",
+  "@restTimer": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "retakePhoto": "Retake photo",
+  "rowNumber": "Row {number}",
+  "@rowNumber": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "saveAsTemplate": "Save as template",
+  "saved": "Saved",
+  "sayHello": "Say hello 👋",
+  "scanBarcode": "Scan barcode",
+  "scheduleSaved": "Schedule saved",
+  "searchExercises": "Search exercises",
+  "searchFoods": "Search foods (Arabic or English)",
+  "searchPeople": "Search by name or phone",
+  "secondsShort": "s",
+  "send": "Send",
+  "sendNotification": "Send notification",
+  "setTime": "Set a time",
+  "sets": "Sets",
+  "setsLogged": "{count, plural, =1{1 set} other{{count} sets}}",
+  "@setsLogged": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "showMacrosToTrainee": "Show macros to trainee",
+  "startWorkout": "Start workout",
+  "startsOn": "Starts on",
+  "statusDue": "Due today",
+  "statusMissed": "Missed",
+  "statusSubmitted": "Sent",
+  "statusUpcoming": "Upcoming",
+  "streakMilestone": "{days} days! Keep going 🎉",
+  "@streakMilestone": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "subscription": "My subscription",
+  "subscriptionEnded": "Ended",
+  "subscriptions": "Subscriptions",
+  "superset": "Superset {group}",
+  "@superset": {
+    "placeholders": {
+      "group": {
+        "type": "String"
+      }
+    }
+  },
+  "supersetLabel": "Superset",
+  "swapFood": "Swap",
+  "takePhoto": "Take photo",
+  "targetCalories": "Calories you want",
+  "targetGrams": "Grams you want",
+  "templateSaved": "Saved as a template",
+  "templates": "Templates",
+  "templatesHint": "A template is a plan not attached to anyone. Applying it makes a copy for the trainee.",
+  "tempo": "tempo {tempo}",
+  "@tempo": {
+    "placeholders": {
+      "tempo": {
+        "type": "String"
+      }
+    }
+  },
+  "tempoLabel": "Tempo",
+  "totalEarnings": "Total",
+  "trackingDistance": "Distance + time",
+  "trackingDuration": "Time",
+  "trackingReps": "Reps",
+  "trackingWeightReps": "Weight × reps",
+  "trainAnyway": "Train anyway",
+  "trainees": "Trainees",
+  "trainingDays": "{count, plural, =1{1 training day} other{{count} training days}}",
+  "@trainingDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "typeMessage": "Message",
+  "undoSet": "Undo set",
+  "unitName": "Unit",
+  "unitNameHint": "e.g. piece",
+  "unitOptional": "Unit (optional)",
+  "upcoming": "Upcoming",
+  "uploadExcel": "Upload Excel",
+  "uploadExcelHint": "Download the template, fill it in (one row per exercise; a missing day number is a rest day), then choose the file. You will see a preview before anything is saved.",
+  "versionFrom": "Version {number} · from {date}",
+  "@versionFrom": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "versionHasLogs": "The trainee has logged against this version, so it can't change. Start a new version to edit from today.",
+  "videoLink": "Video link",
+  "videoLink2": "Second video link",
+  "watchVideo": "Video",
+  "weight": "Weight",
+  "willCreateExercise": "Will be added as a new exercise",
+  "workout": "Workout",
+  "workoutDone": "Done",
+  "workoutInProgress": "In progress",
+  "workoutPlanPreparing": "Your workout plan is being prepared",
+  "workoutSaved": "Workout saved 💪",
+  "workoutTemplates": "Workout templates",
+  "yesterday": "Yesterday"
 }

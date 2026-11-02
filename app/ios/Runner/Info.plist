@@ -19,6 +19,14 @@
 	</array>
 	<key>FlutterDeepLinkingEnabled</key>
 	<false/>
+	<key>NSCameraUsageDescription</key>
+	<string>Take check-in photos and scan food barcodes.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Choose check-in photos from your library.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>CFBundleLocalizations</key>
 	<array>
 		<string>ar</string>
