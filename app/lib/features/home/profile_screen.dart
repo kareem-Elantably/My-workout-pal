@@ -6,6 +6,7 @@ import '../../core/providers.dart';
 import '../../core/ui.dart';
 import '../../core/widgets.dart';
 import '../../router/redirect.dart';
+import '../auth/validators.dart';
 
 String roleLabel(BuildContext context, AppRole role) => switch (role) {
       AppRole.trainee => context.l10n.roleTrainee,
@@ -16,6 +17,22 @@ String roleLabel(BuildContext context, AppRole role) => switch (role) {
 /// Language, role switcher (for people with several roles) and sign out.
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
+
+  Future<void> _edit(BuildContext context, WidgetRef ref, String column, String label, String? current) async {
+    final value = await promptText(context, title: label, initial: current);
+    if (value == null || value.trim().isEmpty || !context.mounted) return;
+    final stored = column == 'phone' ? normalizePhone(value) : value.trim();
+    if (stored == null) {
+      showMessage(context, context.l10n.invalidPhone);
+      return;
+    }
+    try {
+      await ref.read(sessionRepositoryProvider).updateProfile(ref.read(myIdProvider), {column: stored});
+      await ref.read(sessionProvider.notifier).refresh();
+    } catch (e) {
+      if (context.mounted) showError(context, e);
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -36,6 +53,15 @@ class ProfileScreen extends ConsumerWidget {
             leading: CircleAvatar(child: Text(data.profile?.fullName.characters.firstOrNull ?? '?')),
             title: Text(data.profile?.fullName ?? ''),
             subtitle: Text(data.email ?? '', textDirection: TextDirection.ltr),
+            trailing: const Icon(Icons.edit_outlined),
+            onTap: () => _edit(context, ref, 'full_name', l10n.fullName, data.profile?.fullName),
+          ),
+          ListTile(
+            leading: const Icon(Icons.phone_outlined),
+            title: Text(l10n.phone),
+            subtitle: Text(data.profile?.phone ?? '—', textDirection: TextDirection.ltr),
+            trailing: const Icon(Icons.edit_outlined),
+            onTap: () => _edit(context, ref, 'phone', l10n.phone, data.profile?.phone),
           ),
           const Divider(),
           ListTile(

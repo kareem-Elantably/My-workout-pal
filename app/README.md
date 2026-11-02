@@ -34,29 +34,48 @@ com.myworkoutpal.fitnessapp://auth-callback
 Only the **publishable** key belongs in the app; access is enforced by
 row-level security. Never put the secret key or the database password here.
 
-## What works so far
+## What's in the app
 
-- Welcome screen with separate trainee and coach entry points, and a language switch.
-- Sign-up (profile info, required mobile number, consents) and log-in, linked
-  to each other, with a show/hide toggle on passwords.
-- Forgot password: the emailed link opens the app on a "set a new password"
-  screen. The sign-up confirmation link also opens the app and signs in.
-  - If email confirmation is on, the app shows "check your email".
-  - Weight and consents are kept in the sign-up metadata until onboarding is submitted.
-- Sign-up questions loaded from the database, one section per step, saved per step so the user can resume.
-  - Supports text, number (Arabic digits too), yes/no, date, single and multiple choice, and one time per meal.
-- Coach certificates, uploaded to the private `certificates` bucket.
-- Waiting for approval. It checks again when the app comes back to the foreground. After a rejection the user can apply again.
-- Admin review:
-  - pending applications and the applicant's answers
-  - certificates, opened through short-lived links
-  - assigning workout and nutrition coaches
-  - approve or reject
-- Homes:
-  - trainee: today's suggested workout and the streak, or "plans are being prepared"
-  - coach: trainees sorted by who needs attention
-  - admin: applications
-- Profile: language, role switcher for people with several roles, sign out.
+**Trainee** (tabs: Today, Plan, Progress, Chat, More)
+- Today: the suggested workout day (or any other day, or rest), meals with
+  the option eaten and a "did you change anything?" note, "all done", the
+  streak, due check-ins. Arrows go back 7 days, the edit window.
+- Workout logging: sets pre-filled from last time, +/- steppers (hold to
+  repeat), one tap per set, rest timer, cardio by distance and time.
+- Plan (read-only), progress charts (weight, best set per exercise),
+  check-ins with photos (private; female image rule), realtime text chat,
+  notifications inbox, reminders (on the phone, one per meal, defaults),
+  meal converter, private notes, subscription days left, delete account.
+
+**Coach** (tabs: Trainees, Chat, Library, Earnings, More)
+- Trainees sorted by who needs attention; a trainee page with prev/next,
+  chat, custom notification, overview and sign-up answers, plans, progress
+  with compare and check-in schedules, logs, private notes.
+- Workout and nutrition editors. A version with logs is frozen; "new
+  version" copies it from today. Templates: apply to a trainee, save as.
+- Excel upload: template download, preview, error rows, names matched to
+  the library ("did you mean...?" saves the spelling as an alias).
+- Library: exercises (876 seeded), foods (76 seeded, units like "loaf"),
+  barcode scan via Open Food Facts. Earnings by trainee for any range.
+
+**Admin** (tabs: Applications, People, Subscriptions, More)
+- Review sign-ups (answers, certificates, assign coaches, approve/reject).
+- People with roles and coach load; assign or end coaches; send a
+  notification to anyone. Subscriptions: record or edit payments, ending
+  soon / active / ended. Earnings by coach.
+
+**Everyone**: Arabic/English, push notifications (Firebase), email links
+that open the app (confirm sign-up, reset password).
+
+Not yet: offline sync (PowerSync), animations (Rive/Lottie).
+
+### Push notifications
+
+Pushes are sent by the `send-push` Edge Function. It needs one secret:
+**Supabase -> Edge Functions -> Secrets -> `FCM_SERVICE_ACCOUNT`** = the
+whole JSON from **Firebase -> Project settings -> Service accounts ->
+Generate new private key**. Firebase app IDs are in
+`lib/core/firebase_options.dart`.
 
 ## Layout
 

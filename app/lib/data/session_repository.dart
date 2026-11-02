@@ -36,6 +36,10 @@ class SessionRepository {
     );
   }
 
+  /// Only the columns a user may change on their own profile (see grants).
+  Future<void> updateProfile(String userId, Map<String, Object?> values) =>
+      _client.from('profiles').update(values).eq('id', userId);
+
   Future<void> updateLocale(String userId, String locale) =>
       _client.from('profiles').update({'locale': locale}).eq('id', userId);
 }

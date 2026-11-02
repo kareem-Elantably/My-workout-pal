@@ -330,7 +330,11 @@ class _SubscriptionEditorScreenState extends ConsumerState<SubscriptionEditorScr
     final format = DateFormat.yMMMd(Localizations.localeOf(context).toString());
     final people = ref.watch(peopleProvider).value ?? const [];
     final all = ref.watch(subscriptionsProvider(null)).value;
-    if (all != null) _fill(all);
+    // Fields read their initial values once, so wait for the data.
+    if (all == null || people.isEmpty) {
+      return Scaffold(appBar: AppBar(), body: const Center(child: CircularProgressIndicator()));
+    }
+    _fill(all);
     final trainees = people.where((p) => p.roles.contains(AppRole.trainee)).toList();
     final coaches = people.where((p) => p.roles.contains(AppRole.coach)).toList();
     return FormScaffold(

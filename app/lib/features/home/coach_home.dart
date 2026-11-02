@@ -62,7 +62,7 @@ class _TraineeTile extends StatelessWidget {
     final needsAttention = trainee.missedDays7 > 0 || trainee.milestonesDue > 0 || trainee.unreadMessages > 0;
     return ListTile(
       onTap: () => context.push('/coach/trainees/${trainee.traineeId}'),
-      leading: CircleAvatar(child: Text(trainee.fullName.characters.first)),
+      leading: CircleAvatar(child: Text(trainee.fullName.characters.firstOrNull ?? '?')),
       title: Text(trainee.fullName),
       subtitle: Text(status.join(' · '), style: needsAttention ? TextStyle(color: theme.colorScheme.error) : null),
       trailing: Row(

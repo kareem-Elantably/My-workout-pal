@@ -49,7 +49,7 @@ class ProgressView extends ConsumerStatefulWidget {
 }
 
 class _ProgressViewState extends ConsumerState<ProgressView> {
-  Exercise? _exercise;
+  String? _exerciseId;
 
   @override
   Widget build(BuildContext context) {
@@ -68,7 +68,7 @@ class _ProgressViewState extends ConsumerState<ProgressView> {
               for (final v in m.values.values)
                 if (v.numberValue != null) ProgressPoint(m.dueDate, v.numberValue!.toDouble()),
         ];
-        final exercise = _exercise ?? exercises.value?.firstOrNull;
+        final exercise = exercises.value?.where((e) => e.id == _exerciseId).firstOrNull ?? exercises.value?.firstOrNull;
         return RefreshIndicator(
           onRefresh: () async {
             ref.invalidate(_loggedExercisesProvider(widget.traineeId));
@@ -92,7 +92,7 @@ class _ProgressViewState extends ConsumerState<ProgressView> {
                           for (final e in exercises.value!)
                             DropdownMenuItem(value: e, child: SizedBox(width: 180, child: Text(e.name(context), overflow: TextOverflow.ellipsis))),
                         ],
-                        onChanged: (e) => setState(() => _exercise = e),
+                        onChanged: (e) => setState(() => _exerciseId = e?.id),
                       ),
               ),
               if (exercise == null)
@@ -367,8 +367,8 @@ class CompareScreen extends ConsumerStatefulWidget {
 }
 
 class _CompareScreenState extends ConsumerState<CompareScreen> {
-  Milestone? _a;
-  Milestone? _b;
+  String? _aId;
+  String? _bId;
 
   @override
   Widget build(BuildContext context) {
@@ -382,8 +382,8 @@ class _CompareScreenState extends ConsumerState<CompareScreen> {
         onRetry: () => ref.invalidate(milestonesProvider(widget.traineeId)),
         builder: (all) {
           final list = all.where((m) => m.submittedAt != null).toList();
-          final a = _a ?? (list.length > 1 ? list.last : null);
-          final b = _b ?? list.firstOrNull;
+          final a = list.where((m) => m.id == _aId).firstOrNull ?? (list.length > 1 ? list.last : null);
+          final b = list.where((m) => m.id == _bId).firstOrNull ?? list.firstOrNull;
           DropdownButton<Milestone> picker(Milestone? value, ValueChanged<Milestone?> onChanged) => DropdownButton<Milestone>(
                 value: value,
                 isExpanded: true,
@@ -396,9 +396,9 @@ class _CompareScreenState extends ConsumerState<CompareScreen> {
             padding: const EdgeInsets.all(16),
             children: [
               Row(children: [
-                Expanded(child: picker(a, (m) => setState(() => _a = m))),
+                Expanded(child: picker(a, (m) => setState(() => _aId = m?.id))),
                 const SizedBox(width: 16),
-                Expanded(child: picker(b, (m) => setState(() => _b = m))),
+                Expanded(child: picker(b, (m) => setState(() => _bId = m?.id))),
               ]),
               const SizedBox(height: 16),
               for (final id in fieldIds) ...[

@@ -26,6 +26,17 @@ The app must feel simple and comfortable. Before finishing any screen, check:
   errors say what to do, next to the field.
 - **Arabic first**: check every screen in Arabic (RTL) and English.
 
+## Supabase notes
+
+- Schema changes are new files in `supabase/migrations/` (never edit an
+  applied one); the GitHub integration applies them on merge to `main`.
+- New tables need explicit grants to `authenticated` (this project doesn't
+  grant by default); RLS still filters rows. `db/test` runs with the same
+  defaults, so a missing grant fails the tests.
+- Edge Functions live in `supabase/functions/` and are deployed with the
+  Supabase connector or CLI; `send-push` needs the `FCM_SERVICE_ACCOUNT`
+  secret.
+
 ## Checks before pushing
 
 - `cd app && flutter analyze && flutter test`
