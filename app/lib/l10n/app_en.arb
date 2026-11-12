@@ -8,6 +8,7 @@
       }
     }
   },
+  "addGlass": "Glass (250 ml)",
   "addNewFood": "Add a new food",
   "addNewFoodHint": "Type its values per 100 g from the pack, or scan its barcode",
   "appName": "Fitness App",
@@ -19,6 +20,8 @@
   "foodNameRequired": "Enter the food's name",
   "foodNotFoundCoach": "Not in the library yet. Add it once and it's ready for all your plans.",
   "foodNotFoundTrainee": "Not in the list. Ask your coach in chat to add it, or pick the closest food.",
+  "invalidWater": "Enter liters between 0 and 20, like 1.5",
+  "invalidWaterGoal": "Enter a goal between 0.5 and 10 liters, like 2.5",
   "moveDayTo": "Move to another day",
   "moveDown": "Move down",
   "nameArabic": "Name (Arabic)",
@@ -26,8 +29,30 @@
   "newFoodHint": "Values per 100 g, as on the pack. It's added to the library for everyone.",
   "nutritionEditorEmptyHint": "Tap \"Add meal\" to start, then add foods to each meal.",
   "phoneRequired": "Enter your mobile number, we need it to reach you",
+  "removeGlass": "Remove a glass",
   "replacePlanConfirm": "Start a new plan from scratch? The current plan is archived; past workouts stay in the history.",
   "swapExercise": "Replace exercise",
+  "water": "Water",
+  "waterAmountPrompt": "Water drunk (liters)",
+  "waterGoal": "Goal {amount} L",
+  "@waterGoal": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "waterGoalPrompt": "Daily water goal (liters)",
+  "waterGoalReached": "goal reached",
+  "waterLast7Days": "Water, last 7 days",
+  "waterLitres": "{amount} L",
+  "@waterLitres": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "welcomeTitle": "Train with a coach who knows you",
   "welcomeSubtitle": "Workouts, meals and progress, all in one place.",
   "joinAsTrainee": "I want a coach",

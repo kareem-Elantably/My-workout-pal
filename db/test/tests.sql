@@ -576,4 +576,31 @@ select t.check((select data->>'preview' from notifications where recipient_id = 
                'a chat message notifies the other participant');
 select t.check(private.notify_no_data_today() >= 0, 'the evening nudge runs');
 
+-- Water
+set role authenticated;
+select t.login('f');
+select t.check(not t.fails($$insert into water_logs (trainee_id, log_date, ml) values (auth.uid(), t.today(), 750)
+                             on conflict (trainee_id, log_date) do update set ml = excluded.ml$$),
+               'a trainee logs today''s water');
+select t.check(not t.fails($$insert into water_logs (trainee_id, log_date, ml) values (auth.uid(), t.today(), 1000)
+                             on conflict (trainee_id, log_date) do update set ml = excluded.ml$$),
+               'adding a glass updates the day''s total');
+select t.check((select ml from water_logs where trainee_id = auth.uid() and log_date = t.today()) = 1000,
+               'the day keeps one total');
+select t.check(t.fails($$insert into water_logs (trainee_id, log_date, ml) values (auth.uid(), t.today() - 8, 500)$$),
+               'water older than the 7-day window cannot be logged');
+select t.check(t.fails($$insert into water_logs (trainee_id, log_date, ml) values (t.id('m'), t.today(), 500)$$),
+               'a trainee cannot log water for someone else');
+select t.check(not t.fails($$update profiles set water_goal_ml = 3000 where id = auth.uid()$$),
+               'a trainee can change their water goal');
+select t.login('coach2');
+select t.check((select ml from water_logs where trainee_id = t.id('f') and log_date = t.today()) = 1000,
+               'the trainee''s coach sees their water');
+select t.check(t.fails($$update water_logs set ml = 0 where trainee_id = t.id('f')$$)
+               or (select ml from water_logs where trainee_id = t.id('f') and log_date = t.today()) = 1000,
+               'a coach cannot change the trainee''s water');
+select t.login('x');
+select t.check((select count(*) from water_logs) = 0, 'other people cannot see someone''s water');
+reset role;
+
 \echo 'ALL TESTS PASSED'

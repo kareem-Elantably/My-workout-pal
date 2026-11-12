@@ -14,6 +14,7 @@ import '../home/coach_home.dart';
 import '../shared/notes_screen.dart';
 import '../shared/plan_views.dart';
 import '../shared/progress_views.dart';
+import '../trainee/water_card.dart' show litres;
 
 final _traineeProfileProvider = FutureProvider.autoDispose.family<Profile, String>((ref, id) async {
   final row = await ref.watch(supabaseClientProvider).from('profiles').select().eq('id', id).single();
@@ -27,6 +28,13 @@ final _traineePlansProvider = FutureProvider.autoDispose.family<(WorkoutPlan?, N
   ]);
   return (results[0] as WorkoutPlan?, results[1] as NutritionPlan?);
 });
+
+final _waterProvider = FutureProvider.autoDispose.family<Map<DateTime, int>, String>(
+  (ref, id) {
+    final t = today();
+    return ref.watch(nutritionRepositoryProvider).waterSince(id, DateTime(t.year, t.month, t.day - 6));
+  },
+);
 
 final _answersProvider = FutureProvider.autoDispose.family<(List<QuestionStep>, Map<String, Object?>), String>((ref, id) async {
   final repo = ref.watch(onboardingRepositoryProvider);
@@ -161,6 +169,7 @@ class _OverviewTab extends ConsumerWidget {
               if (status.milestonesDue > 0) ListTile(leading: const Icon(Icons.monitor_weight_outlined), title: Text(l10n.milestonesDue(status.milestonesDue))),
             ]),
           ),
+        if (profile != null) _WaterWeek(traineeId: traineeId, goalMl: profile.waterGoalMl),
         if (profile != null)
           ListTile(
             title: Text(profile.fullName),
@@ -189,6 +198,57 @@ class _OverviewTab extends ConsumerWidget {
           },
         ),
       ],
+    );
+  }
+}
+
+/// The trainee's water for the last 7 days, today first, against their goal.
+class _WaterWeek extends ConsumerWidget {
+  const _WaterWeek({required this.traineeId, required this.goalMl});
+
+  final String traineeId;
+  final int goalMl;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final water = ref.watch(_waterProvider(traineeId)).value;
+    if (water == null) return const SizedBox.shrink();
+    final locale = Localizations.localeOf(context).toString();
+    return Card(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Row(children: [
+            Icon(Icons.water_drop, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(width: 8),
+            Expanded(child: Text(l10n.waterLast7Days, style: Theme.of(context).textTheme.titleMedium)),
+            Text(l10n.waterGoal(litres(goalMl)), style: Theme.of(context).textTheme.labelMedium),
+          ]),
+          const SizedBox(height: 8),
+          for (var i = 0; i < 7; i++)
+            Builder(builder: (context) {
+              final t = today();
+              final day = DateTime(t.year, t.month, t.day - i);
+              final ml = water[day] ?? 0;
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 3),
+                child: Row(children: [
+                  SizedBox(width: 72, child: Text(i == 0 ? l10n.today : DateFormat.E(locale).format(day))),
+                  Expanded(
+                    child: LinearProgressIndicator(
+                      value: (ml / goalMl).clamp(0, 1).toDouble(),
+                      minHeight: 6,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                  SizedBox(width: 64, child: Text(ml == 0 ? '—' : l10n.waterLitres(litres(ml)), textAlign: TextAlign.end)),
+                ]),
+              );
+            }),
+        ]),
+      ),
     );
   }
 }

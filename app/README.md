@@ -40,6 +40,8 @@ row-level security. Never put the secret key or the database password here.
 - Today: the suggested workout day (or any other day, or rest), meals with
   the option eaten and a "did you change anything?" note, "all done", the
   streak, due check-ins. Arrows go back 7 days, the edit window.
+- Water: one tap per glass (250 ml) on Today, tap the amount to type it
+  exactly, a daily goal (2.5 L until changed). Same 7-day window.
 - Workout logging: sets pre-filled from last time, +/- steppers (hold to
   repeat), one tap per set, rest timer, cardio by distance and time.
 - Plan (read-only), progress charts (weight, best set per exercise),
@@ -50,7 +52,8 @@ row-level security. Never put the secret key or the database password here.
 **Coach** (tabs: Trainees, Chat, Library, Earnings, More)
 - Trainees sorted by who needs attention; a trainee page with prev/next,
   chat, custom notification, overview and sign-up answers, plans, progress
-  with compare and check-in schedules, logs, private notes.
+  with compare and check-in schedules, logs, private notes, water for
+  the last 7 days.
 - Workout and nutrition editors are the main way to build plans: start
   from scratch or a template, then add, edit, reorder, duplicate, replace
   or delete exercises, days and meals. Edits save straight away. Once the
