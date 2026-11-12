@@ -110,14 +110,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             child: AsyncBody(
               value: messages,
               onRetry: () => ref.invalidate(_messagesProvider(widget.conversationId)),
-              builder: (list) => list.isEmpty
-                  ? MessageView(icon: Icons.waving_hand_outlined, title: l10n.sayHello)
-                  : ListView.builder(
+              builder: (list) {
+                if (list.isEmpty) return MessageView(icon: Icons.waving_hand_outlined, title: l10n.sayHello);
+                final rows = chatRows(list);
+                return ListView.builder(
+                      // Newest at the bottom, next to the text field, and it
+                      // stays there as new messages arrive.
                       reverse: true,
                       padding: const EdgeInsets.all(12),
-                      itemCount: list.length,
+                      itemCount: rows.length,
                       itemBuilder: (context, i) {
-                        final m = list[list.length - 1 - i];
+                        final row = rows[rows.length - 1 - i];
+                        if (row is DateTime) return _DayChip(day: row);
+                        final m = row as ChatMessage;
                         final mine = m.senderId == me;
                         final scheme = Theme.of(context).colorScheme;
                         return Align(
@@ -143,7 +148,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           ),
                         );
                       },
-                    ),
+                    );
+              },
             ),
           ),
           SafeArea(
@@ -175,6 +181,51 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Messages oldest first, with the day (a [DateTime]) before each day's
+/// first message.
+List<Object> chatRows(List<ChatMessage> messages) {
+  final rows = <Object>[];
+  DateTime? day;
+  for (final m in messages) {
+    final local = m.createdAt.toLocal();
+    final d = DateTime(local.year, local.month, local.day);
+    if (d != day) rows.add(day = d);
+    rows.add(m);
+  }
+  return rows;
+}
+
+/// "Today", "Yesterday", the weekday this week, else the date.
+class _DayChip extends StatelessWidget {
+  const _DayChip({required this.day});
+
+  final DateTime day;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final locale = Localizations.localeOf(context).toString();
+    final now = DateTime.now();
+    final daysAgo = DateTime(now.year, now.month, now.day).difference(day).inDays;
+    final label = switch (daysAgo) {
+      0 => l10n.today,
+      1 => l10n.yesterday,
+      < 7 => DateFormat.EEEE(locale).format(day),
+      _ when day.year == now.year => DateFormat.MMMMd(locale).format(day),
+      _ => DateFormat.yMMMMd(locale).format(day),
+    };
+    final scheme = Theme.of(context).colorScheme;
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        decoration: BoxDecoration(color: scheme.surfaceContainerHigh, borderRadius: BorderRadius.circular(12)),
+        child: Text(label, style: Theme.of(context).textTheme.labelMedium),
       ),
     );
   }
