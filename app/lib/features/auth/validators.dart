@@ -32,7 +32,7 @@ String? normalizePhone(String? value) {
 }
 
 String? validatePhone(BuildContext context, String? value) {
-  if (value == null || value.trim().isEmpty) return context.l10n.required;
+  if (value == null || value.trim().isEmpty) return context.l10n.phoneRequired;
   return normalizePhone(value) == null ? context.l10n.invalidPhone : null;
 }
 

@@ -30,7 +30,7 @@ class _CertificatesScreenState extends ConsumerState<CertificatesScreen> {
       isScrollControlled: true,
       builder: (_) => _AddCertificateSheet(coachId: _session.userId),
     );
-    if (added == true) setState(() => _certificates = _load());
+    if (added == true) setState(() { _certificates = _load(); });
   }
 
   Future<void> _submit() async {
@@ -67,7 +67,7 @@ class _CertificatesScreenState extends ConsumerState<CertificatesScreen> {
           ),
           children: [
             if (snapshot.hasError)
-              ErrorRetry(error: snapshot.error!, onRetry: () => setState(() => _certificates = _load()))
+              ErrorRetry(error: snapshot.error!, onRetry: () => setState(() { _certificates = _load(); }))
             else if (certificates == null)
               const Center(child: CircularProgressIndicator())
             else ...[

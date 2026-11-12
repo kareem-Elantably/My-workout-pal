@@ -29,6 +29,32 @@ class NutritionRepository {
     return rows.map(MealLog.fromJson).toList();
   }
 
+  /// Millilitres of water drunk on a day (0 if nothing logged).
+  Future<int> waterOn(String traineeId, DateTime day) async {
+    final row = await _client
+        .from('water_logs')
+        .select('ml')
+        .eq('trainee_id', traineeId)
+        .eq('log_date', isoDate(day))
+        .maybeSingle();
+    return row?['ml'] as int? ?? 0;
+  }
+
+  /// The day's total (the app adds a glass at a time and saves the sum).
+  Future<void> setWater(String traineeId, DateTime day, int ml) => _client
+      .from('water_logs')
+      .upsert({'trainee_id': traineeId, 'log_date': isoDate(day), 'ml': ml}, onConflict: 'trainee_id,log_date');
+
+  /// Water per day from [from] on, for the coach.
+  Future<Map<DateTime, int>> waterSince(String traineeId, DateTime from) async {
+    final rows = await _client
+        .from('water_logs')
+        .select('log_date, ml')
+        .eq('trainee_id', traineeId)
+        .gte('log_date', isoDate(from));
+    return {for (final r in rows) DateTime.parse(r['log_date'] as String): r['ml'] as int};
+  }
+
   /// Marks a meal eaten (or changes which option / the note).
   Future<void> logMeal({
     required String traineeId,

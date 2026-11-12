@@ -9,6 +9,7 @@ import '../../core/widgets.dart';
 import '../../data/milestone_repository.dart';
 import '../../data/workout_repository.dart';
 import '../shared/notifications_button.dart';
+import 'water_card.dart';
 
 class TodayData {
   const TodayData({
@@ -107,7 +108,10 @@ class _TodayTabState extends ConsumerState<TodayTab> {
               value: data,
               onRetry: () => ref.invalidate(todayDataProvider(_day)),
               builder: (d) => RefreshIndicator(
-                onRefresh: () => ref.refresh(todayDataProvider(_day).future),
+                onRefresh: () {
+                ref.invalidate(waterProvider(_day));
+                return ref.refresh(todayDataProvider(_day).future);
+              },
                 child: d.workoutPlan == null && d.nutritionPlan == null
                     ? EmptyList(icon: Icons.construction_outlined, title: l10n.preparingTitle, body: l10n.preparingBody)
                     : ListView(
@@ -118,6 +122,7 @@ class _TodayTabState extends ConsumerState<TodayTab> {
                             if (d.isToday && m.submittedAt == null && !m.dueDate.isAfter(_day)) _MilestoneDueCard(milestone: m),
                           _WorkoutSection(data: d),
                           if (d.nutritionVersion != null) _MealsSection(data: d),
+                          WaterCard(day: _day),
                         ],
                       ),
               ),

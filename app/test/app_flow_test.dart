@@ -148,6 +148,33 @@ void main() {
         )).called(1);
   });
 
+  testWidgets('water: each tap adds a glass and saves the day\'s total', (tester) async {
+    when(() => mocks.workout.activePlan('user-1')).thenAnswer((_) async => sampleWorkoutPlan());
+    when(() => mocks.nutrition.waterOn('user-1', any())).thenAnswer((_) async => 1000);
+    await pumpApp(tester, SignedIn(sessionData(roles: {AppRole.trainee})));
+
+    final glass = find.text('Glass (250 ml)');
+    await tester.ensureVisible(glass);
+    await tester.pumpAndSettle();
+    expect(find.text('1 L'), findsOneWidget);
+    expect(find.text('Goal 2.5 L'), findsOneWidget);
+
+    await tester.tap(glass);
+    await tester.tap(glass);
+    await tester.pumpAndSettle();
+    expect(find.text('1.5 L'), findsOneWidget);
+    verifyInOrder([
+      () => mocks.nutrition.setWater('user-1', any(), 1250),
+      () => mocks.nutrition.setWater('user-1', any(), 1500),
+    ]);
+
+    await tester.tap(find.byTooltip('Remove a glass'));
+    await tester.pumpAndSettle();
+    // The earlier 1250 was already counted by verifyInOrder.
+    verify(() => mocks.nutrition.setWater('user-1', any(), 1250)).called(1);
+    expect(find.text('1.25 L'), findsOneWidget);
+  });
+
   testWidgets('a planned rest day offers "Train anyway"', (tester) async {
     when(() => mocks.workout.activePlan('user-1')).thenAnswer((_) async => sampleWorkoutPlan());
     when(() => mocks.workout.nextWorkout('user-1'))

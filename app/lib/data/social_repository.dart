@@ -150,13 +150,14 @@ class SocialRepository {
     return row?['id'] as String?;
   }
 
-  /// Live list of messages, oldest first (Supabase Realtime).
+  /// Live list of messages, oldest first (Supabase Realtime). The stream's
+  /// `order` is newest-first by default, so the order is fixed here.
   Stream<List<ChatMessage>> messages(String conversationId) => _client
       .from('messages')
       .stream(primaryKey: ['id'])
       .eq('conversation_id', conversationId)
-      .order('created_at')
-      .map((rows) => rows.map(ChatMessage.fromJson).toList());
+      .order('created_at', ascending: true)
+      .map((rows) => rows.map(ChatMessage.fromJson).toList()..sort((a, b) => a.createdAt.compareTo(b.createdAt)));
 
   Future<void> send(String conversationId, String body) =>
       _client.from('messages').insert({'conversation_id': conversationId, 'sender_id': _me, 'body': body.trim()});

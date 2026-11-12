@@ -32,6 +32,7 @@ class Profile {
     this.dateOfBirth,
     this.heightCm,
     this.phone,
+    this.waterGoalMl = 2500,
   });
 
   final String id;
@@ -42,6 +43,9 @@ class Profile {
   final num? heightCm;
   final String? phone;
 
+  /// Daily water goal; 2.5 L until the trainee changes it.
+  final int waterGoalMl;
+
   factory Profile.fromJson(Map<String, dynamic> json) => Profile(
         id: json['id'] as String,
         fullName: json['full_name'] as String,
@@ -50,6 +54,7 @@ class Profile {
         dateOfBirth: json['date_of_birth'] == null ? null : DateTime.parse(json['date_of_birth'] as String),
         heightCm: json['height_cm'] as num?,
         phone: json['phone'] as String?,
+        waterGoalMl: json['water_goal_ml'] as int? ?? 2500,
       );
 }
 

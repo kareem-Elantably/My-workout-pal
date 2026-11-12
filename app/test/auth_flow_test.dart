@@ -77,7 +77,7 @@ void main() {
 
     await tapText(tester, 'Create account');
     final phoneField = find.widgetWithText(TextFormField, 'Mobile number');
-    expect(find.descendant(of: phoneField, matching: find.text('Required')), findsOneWidget);
+    expect(find.descendant(of: phoneField, matching: find.textContaining('Enter your mobile number')), findsOneWidget);
 
     await tester.enterText(phoneField, '123');
     await tapText(tester, 'Create account');

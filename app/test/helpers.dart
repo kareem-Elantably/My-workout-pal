@@ -49,6 +49,8 @@ class Mocks {
     when(() => workout.lastValues(any(), any())).thenAnswer((_) async => {});
     when(() => nutrition.activePlan(any())).thenAnswer((_) async => null);
     when(() => nutrition.logsOn(any(), any())).thenAnswer((_) async => []);
+    when(() => nutrition.waterOn(any(), any())).thenAnswer((_) async => 0);
+    when(() => nutrition.setWater(any(), any(), any())).thenAnswer((_) async {});
     when(() => milestone.forTrainee(any())).thenAnswer((_) async => []);
     when(() => planEditor.workoutTemplates()).thenAnswer((_) async => []);
     when(() => planEditor.nutritionTemplates()).thenAnswer((_) async => []);

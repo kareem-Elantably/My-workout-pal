@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/models.dart';
 import '../../core/plan_models.dart';
+import '../../core/providers.dart';
 import '../../core/ui.dart';
 import '../auth/validators.dart';
 import 'food_picker.dart';
@@ -10,14 +13,14 @@ enum _Mode { calories, macro, swap }
 enum _Macro { protein, carbs, fat }
 
 /// grams = target / value per 100 g × 100. Standalone: saves nothing.
-class MealConverterScreen extends StatefulWidget {
+class MealConverterScreen extends ConsumerStatefulWidget {
   const MealConverterScreen({super.key});
 
   @override
-  State<MealConverterScreen> createState() => _MealConverterScreenState();
+  ConsumerState<MealConverterScreen> createState() => _MealConverterScreenState();
 }
 
-class _MealConverterScreenState extends State<MealConverterScreen> {
+class _MealConverterScreenState extends ConsumerState<MealConverterScreen> {
   _Mode _mode = _Mode.calories;
   _Macro _macro = _Macro.protein;
   Food? _food;
@@ -49,7 +52,9 @@ class _MealConverterScreenState extends State<MealConverterScreen> {
         icon: const Icon(Icons.restaurant),
         label: Text(food?.name(context) ?? label, overflow: TextOverflow.ellipsis),
         onPressed: () async {
-          final picked = await pickFood(context);
+          final session = ref.read(sessionProvider).value;
+          final isCoach = session is SignedIn && session.data.roles.contains(AppRole.coach);
+          final picked = await pickFood(context, canAdd: isCoach);
           if (picked != null) setState(() => onPicked(picked));
         },
       );

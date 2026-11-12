@@ -60,6 +60,15 @@ Supabase GitHub integration applies it on merge to `main`. Run the tests with `d
 | B18 | Coaches define repeating schedules and can add one-off milestones at any time, picking the fields and which are required. `generate_due_milestones()` creates due milestones hourly. Missed = due date passed and not submitted. Required fields are checked on submit. |
 | B19 | `coach_dashboard()`: trainees sorted by missed days, then due milestones, then unread messages. Each row shows today's status, the streak and subscription days left. |
 
+
+## Later changes
+| Change | Decision |
+|---|---|
+| Mobile number | Required for everyone: `profiles.phone` is `not null` and not blank (sign-up, profile edit, and any other path). Accounts created by hand in the dashboard need `phone` in the user metadata. |
+| Plan editing | Editing in the app is the main path, Excel a shortcut. Frozen versions stay frozen in the database; the app makes the new version itself on the first edit, so the coach never sees a lock. |
+| Missing foods | Coaches add them from the food search (or by barcode) while building a meal; trainees ask their coach. |
+| Water | `water_logs`: one total per trainee per day (the app adds 250 ml per tap), same 7-day edit window as meals, read by the trainee's coaches and admins. `profiles.water_goal_ml` (default 2500) is set by the trainee. Not part of the streak. |
+
 ## Still open
 - **Deployment:**
   - The migration enables pg_cron and creates the three private storage buckets itself.

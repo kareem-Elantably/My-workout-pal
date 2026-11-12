@@ -40,6 +40,8 @@ row-level security. Never put the secret key or the database password here.
 - Today: the suggested workout day (or any other day, or rest), meals with
   the option eaten and a "did you change anything?" note, "all done", the
   streak, due check-ins. Arrows go back 7 days, the edit window.
+- Water: one tap per glass (250 ml) on Today, tap the amount to type it
+  exactly, a daily goal (2.5 L until changed). Same 7-day window.
 - Workout logging: sets pre-filled from last time, +/- steppers (hold to
   repeat), one tap per set, rest timer, cardio by distance and time.
 - Plan (read-only), progress charts (weight, best set per exercise),
@@ -50,13 +52,22 @@ row-level security. Never put the secret key or the database password here.
 **Coach** (tabs: Trainees, Chat, Library, Earnings, More)
 - Trainees sorted by who needs attention; a trainee page with prev/next,
   chat, custom notification, overview and sign-up answers, plans, progress
-  with compare and check-in schedules, logs, private notes.
-- Workout and nutrition editors. A version with logs is frozen; "new
-  version" copies it from today. Templates: apply to a trainee, save as.
-- Excel upload: template download, preview, error rows, names matched to
-  the library ("did you mean...?" saves the spelling as an alias).
+  with compare and check-in schedules, logs, private notes, water for
+  the last 7 days.
+- Workout and nutrition editors are the main way to build plans: start
+  from scratch or a template, then add, edit, reorder, duplicate, replace
+  or delete exercises, days and meals. Edits save straight away. Once the
+  trainee has logged against the plan, the first edit makes a new version
+  from today on its own, so past workouts keep what was really done.
+  Templates: apply to a trainee, save as.
+- Excel upload (a shortcut): template download, preview, error rows, names
+  matched to the library ("did you mean...?" saves the spelling as an alias).
 - Library: exercises (876 seeded), foods (76 seeded, units like "loaf"),
   barcode scan via Open Food Facts. Earnings by trainee for any range.
+- A food that isn't in the library: "Add it" right in the food search
+  (name pre-filled, values per 100 g, optional unit) or scan its barcode;
+  it goes straight into the meal and stays in the library. Trainees are
+  told to ask their coach.
 
 **Admin** (tabs: Applications, People, Subscriptions, More)
 - Review sign-ups (answers, certificates, assign coaches, approve/reject).
