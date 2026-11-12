@@ -64,7 +64,7 @@ class _ExerciseSearchState extends ConsumerState<_ExerciseSearch> {
             decoration: InputDecoration(prefixIcon: const Icon(Icons.search), hintText: l10n.searchExercises),
             onChanged: (q) {
               _debounce?.cancel();
-              _debounce = Timer(const Duration(milliseconds: 300), () => setState(() => _results = _search(q)));
+              _debounce = Timer(const Duration(milliseconds: 300), () => setState(() { _results = _search(q); }));
             },
           ),
         ),
@@ -74,7 +74,7 @@ class _ExerciseSearchState extends ConsumerState<_ExerciseSearch> {
           child: FutureBuilder(
             future: _results,
             builder: (context, snapshot) {
-              if (snapshot.hasError) return ErrorRetry(error: snapshot.error!, onRetry: () => setState(() => _results = _search(_query.text)));
+              if (snapshot.hasError) return ErrorRetry(error: snapshot.error!, onRetry: () => setState(() { _results = _search(_query.text); }));
               if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
               final list = snapshot.data!;
               if (list.isEmpty) return Center(child: Text(l10n.noResults));

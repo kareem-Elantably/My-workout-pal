@@ -19,9 +19,14 @@ class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
   Future<void> _edit(BuildContext context, WidgetRef ref, String column, String label, String? current) async {
-    final value = await promptText(context, title: label, initial: current);
-    if (value == null || value.trim().isEmpty || !context.mounted) return;
-    final stored = column == 'phone' ? normalizePhone(value) : value.trim();
+    final isPhone = column == 'phone';
+    final value = await promptText(context, title: label, initial: current, keyboardType: isPhone ? TextInputType.phone : null);
+    if (value == null || !context.mounted) return;
+    if (value.trim().isEmpty) {
+      showMessage(context, isPhone ? context.l10n.phoneRequired : context.l10n.required);
+      return;
+    }
+    final stored = isPhone ? normalizePhone(value) : value.trim();
     if (stored == null) {
       showMessage(context, context.l10n.invalidPhone);
       return;

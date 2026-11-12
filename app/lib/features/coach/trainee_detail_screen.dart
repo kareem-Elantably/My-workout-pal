@@ -209,8 +209,10 @@ class _WorkoutTab extends ConsumerWidget {
 
   final String traineeId;
 
-  Future<void> _create(BuildContext context, WidgetRef ref) async {
+  Future<void> _create(BuildContext context, WidgetRef ref, {bool replacing = false}) async {
     final l10n = context.l10n;
+    if (replacing && !await confirm(context, l10n.replacePlanConfirm, action: l10n.newWorkoutPlan)) return;
+    if (!context.mounted) return;
     final name = await promptText(context, title: l10n.newWorkoutPlan, label: l10n.planName);
     if (name == null || name.trim().isEmpty || !context.mounted) return;
     try {
@@ -278,7 +280,15 @@ class _WorkoutTab extends ConsumerWidget {
                 title: Text(plan.name, style: Theme.of(context).textTheme.titleLarge),
                 subtitle: Text(l10n.versionFrom(version.versionNo, DateFormat.yMMMd(Localizations.localeOf(context).toString()).format(version.effectiveFrom))),
               ),
-              Wrap(spacing: 8, children: [actions[1], actions[2]]),
+              Wrap(spacing: 8, runSpacing: 4, alignment: WrapAlignment.center, children: [
+                TextButton.icon(
+                  icon: const Icon(Icons.add),
+                  label: Text(l10n.newWorkoutPlan),
+                  onPressed: () => _create(context, ref, replacing: true),
+                ),
+                actions[1],
+                actions[2],
+              ]),
             ]),
           ),
         );

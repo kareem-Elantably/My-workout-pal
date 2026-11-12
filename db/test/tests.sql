@@ -49,7 +49,7 @@ declare v uuid := gen_random_uuid();
 begin
   insert into t.users values (p_name, v);
   insert into auth.users (id, raw_user_meta_data)
-  values (v, jsonb_build_object('full_name', p_name, 'gender', p_gender));
+  values (v, jsonb_build_object('full_name', p_name, 'gender', p_gender, 'phone', '+201000000000'));
   insert into user_roles (user_id, role_id) select v, id from roles where key = any (p_roles);
   return v;
 end $$;
@@ -145,8 +145,12 @@ select t.check((select count(*) from storage.buckets where not public) = 3,
                'the migration creates the three private storage buckets');
 select t.check((select gender from profiles where id = t.id('f')) = 'female',
                'sign-up trigger creates the profile from metadata');
-select t.check(t.fails($$insert into auth.users values (gen_random_uuid(), '{"full_name": "No gender"}')$$),
+select t.check(t.fails($$insert into auth.users values (gen_random_uuid(), '{"full_name": "No gender", "phone": "+201000000001"}')$$),
                'sign-up without gender is rejected');
+select t.check(t.fails($$insert into auth.users values (gen_random_uuid(), '{"full_name": "No phone", "gender": "male"}')$$),
+               'sign-up without a mobile number is rejected');
+select t.check(t.fails($$insert into auth.users values (gen_random_uuid(), '{"full_name": "Blank phone", "gender": "male", "phone": "  "}')$$),
+               'sign-up with a blank mobile number is rejected');
 
 set role anon;
 select t.check(t.fails('select count(*) from profiles'), 'signed-out users (anon) cannot read any table');
@@ -160,6 +164,10 @@ select t.check(t.fails($$update profiles set gender = 'female' where id = auth.u
                'a user cannot change their own gender');
 select t.check(not t.fails($$update profiles set full_name = 'M renamed' where id = auth.uid()$$),
                'a user can still edit their name');
+select t.check(t.fails($$update profiles set phone = null where id = auth.uid()$$),
+               'a user cannot remove their mobile number');
+select t.check(not t.fails($$update profiles set phone = '+201011111111' where id = auth.uid()$$),
+               'a user can change their mobile number');
 select t.check(t.fails($$insert into coach_assignments (coach_id, trainee_id, scope_id) values (auth.uid(), t.id('f'), 1)$$),
                'a non-admin cannot create coach assignments');
 select t.check((select count(*) from profiles where id = t.id('f')) = 0, 'a trainee cannot read another trainee''s profile');

@@ -51,12 +51,20 @@ row-level security. Never put the secret key or the database password here.
 - Trainees sorted by who needs attention; a trainee page with prev/next,
   chat, custom notification, overview and sign-up answers, plans, progress
   with compare and check-in schedules, logs, private notes.
-- Workout and nutrition editors. A version with logs is frozen; "new
-  version" copies it from today. Templates: apply to a trainee, save as.
-- Excel upload: template download, preview, error rows, names matched to
-  the library ("did you mean...?" saves the spelling as an alias).
+- Workout and nutrition editors are the main way to build plans: start
+  from scratch or a template, then add, edit, reorder, duplicate, replace
+  or delete exercises, days and meals. Edits save straight away. Once the
+  trainee has logged against the plan, the first edit makes a new version
+  from today on its own, so past workouts keep what was really done.
+  Templates: apply to a trainee, save as.
+- Excel upload (a shortcut): template download, preview, error rows, names
+  matched to the library ("did you mean...?" saves the spelling as an alias).
 - Library: exercises (876 seeded), foods (76 seeded, units like "loaf"),
   barcode scan via Open Food Facts. Earnings by trainee for any range.
+- A food that isn't in the library: "Add it" right in the food search
+  (name pre-filled, values per 100 g, optional unit) or scan its barcode;
+  it goes straight into the meal and stays in the library. Trainees are
+  told to ask their coach.
 
 **Admin** (tabs: Applications, People, Subscriptions, More)
 - Review sign-ups (answers, certificates, assign coaches, approve/reject).

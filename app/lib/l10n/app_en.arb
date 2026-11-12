@@ -1,6 +1,33 @@
 {
   "@@locale": "en",
+  "addFoodNamed": "Add \"{name}\" as a new food",
+  "@addFoodNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addNewFood": "Add a new food",
+  "addNewFoodHint": "Type its values per 100 g from the pack, or scan its barcode",
   "appName": "Fitness App",
+  "dayOptions": "Day options",
+  "duplicate": "Duplicate",
+  "duplicateDayTo": "Copy to another day",
+  "editSavedAsNewVersion": "Saved. The trainee's past workouts keep the old plan; this applies from today.",
+  "exerciseOptions": "Exercise options",
+  "foodNameRequired": "Enter the food's name",
+  "foodNotFoundCoach": "Not in the library yet. Add it once and it's ready for all your plans.",
+  "foodNotFoundTrainee": "Not in the list. Ask your coach in chat to add it, or pick the closest food.",
+  "moveDayTo": "Move to another day",
+  "moveDown": "Move down",
+  "nameArabic": "Name (Arabic)",
+  "nameEnglishOptional": "Name in English (optional)",
+  "newFoodHint": "Values per 100 g, as on the pack. It's added to the library for everyone.",
+  "nutritionEditorEmptyHint": "Tap \"Add meal\" to start, then add foods to each meal.",
+  "phoneRequired": "Enter your mobile number, we need it to reach you",
+  "replacePlanConfirm": "Start a new plan from scratch? The current plan is archived; past workouts stay in the history.",
+  "swapExercise": "Replace exercise",
   "welcomeTitle": "Train with a coach who knows you",
   "welcomeSubtitle": "Workouts, meals and progress, all in one place.",
   "joinAsTrainee": "I want a coach",
@@ -60,6 +87,7 @@
   "save": "Save",
   "cancel": "Cancel",
   "retry": "Try again",
+  "workoutEditorEmptyHint": "Pick a day below and tap \"Training day\" to add it, then add its exercises. Days you leave empty are rest days.",
   "yes": "Yes",
   "no": "No",
   "stepOf": "Step {current} of {total}",
@@ -475,7 +503,6 @@
   "newFood": "New food",
   "newNutritionPlan": "New nutrition plan",
   "newTemplate": "New template",
-  "newVersion": "New version",
   "newWorkoutPlan": "New workout plan",
   "nextDay": "Next day",
   "nextMonth": "Next month",
@@ -686,7 +713,6 @@
       }
     }
   },
-  "versionHasLogs": "The trainee has logged against this version, so it can't change. Start a new version to edit from today.",
   "videoLink": "Video link",
   "videoLink2": "Second video link",
   "watchVideo": "Video",

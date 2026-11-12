@@ -3,14 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../core/plan_models.dart';
 import '../../core/providers.dart';
 import '../../core/ui.dart';
 import '../../core/widgets.dart';
-import '../../data/library_repository.dart';
-import '../auth/validators.dart';
+import '../shared/new_food.dart';
 import '../shared/notifications_button.dart';
 import 'exercise_picker.dart';
 
@@ -160,7 +158,7 @@ class _ExercisesState extends ConsumerState<_Exercises> {
             onChanged: (q) {
               _debounce?.cancel();
               _debounce = Timer(const Duration(milliseconds: 300),
-                  () => setState(() => _results = ref.read(libraryRepositoryProvider).searchExercises(q)));
+                  () => setState(() { _results = ref.read(libraryRepositoryProvider).searchExercises(q); }));
             },
           ),
         ),
@@ -206,30 +204,14 @@ class _FoodsState extends ConsumerState<_Foods> {
     super.dispose();
   }
 
-  void _reload() => setState(() => _results = ref.read(libraryRepositoryProvider).searchFoods(_query));
+  void _reload() => setState(() { _results = ref.read(libraryRepositoryProvider).searchFoods(_query); });
 
   Future<void> _scan() async {
-    final code = await Navigator.of(context).push<String>(MaterialPageRoute(builder: (_) => const _BarcodeScanner()));
-    if (code == null || !mounted) return;
-    final repo = ref.read(libraryRepositoryProvider);
-    final existing = await repo.foodByBarcode(code);
-    if (!mounted) return;
-    if (existing != null) {
-      showMessage(context, context.l10n.foodAlreadyInLibrary(existing.name(context)));
-      return;
-    }
-    FoodDraft? draft;
-    try {
-      draft = await repo.lookupOpenFoodFacts(code);
-    } catch (_) {}
-    if (!mounted) return;
-    if (draft == null) showMessage(context, context.l10n.barcodeNotFound);
-    await _addFood(draft: draft, barcode: code);
+    if (await scanFood(context, ref) != null) _reload();
   }
 
-  Future<void> _addFood({FoodDraft? draft, String? barcode}) async {
-    final saved = await showDialog<bool>(context: context, builder: (_) => _FoodDialog(draft: draft, barcode: barcode));
-    if (saved == true) _reload();
+  Future<void> _addFood() async {
+    if (await addNewFood(context, name: _query) != null) _reload();
   }
 
   @override
@@ -278,129 +260,6 @@ class _FoodsState extends ConsumerState<_Foods> {
           child: Text(l10n.offAttribution, style: Theme.of(context).textTheme.labelSmall),
         ),
       ]),
-    );
-  }
-}
-
-class _BarcodeScanner extends StatelessWidget {
-  const _BarcodeScanner();
-
-  @override
-  Widget build(BuildContext context) {
-    var done = false;
-    return Scaffold(
-      appBar: AppBar(title: Text(context.l10n.scanBarcode)),
-      body: MobileScanner(
-        onDetect: (capture) {
-          final code = capture.barcodes.firstOrNull?.rawValue;
-          if (code != null && !done) {
-            done = true;
-            Navigator.pop(context, code);
-          }
-        },
-      ),
-    );
-  }
-}
-
-class _FoodDialog extends ConsumerStatefulWidget {
-  const _FoodDialog({this.draft, this.barcode});
-
-  final FoodDraft? draft;
-  final String? barcode;
-
-  @override
-  ConsumerState<_FoodDialog> createState() => _FoodDialogState();
-}
-
-class _FoodDialogState extends ConsumerState<_FoodDialog> {
-  final _form = GlobalKey<FormState>();
-  late final _nameEn = TextEditingController(text: widget.draft?.name);
-  final _nameAr = TextEditingController();
-  late final _kcal = TextEditingController(text: formatNum(widget.draft?.kcal));
-  late final _protein = TextEditingController(text: formatNum(widget.draft?.protein));
-  late final _carbs = TextEditingController(text: formatNum(widget.draft?.carbs));
-  late final _fat = TextEditingController(text: formatNum(widget.draft?.fat));
-  final _unitName = TextEditingController();
-  final _unitGrams = TextEditingController();
-  bool _busy = false;
-
-  @override
-  void dispose() {
-    for (final c in [_nameEn, _nameAr, _kcal, _protein, _carbs, _fat, _unitName, _unitGrams]) {
-      c.dispose();
-    }
-    super.dispose();
-  }
-
-  Future<void> _save() async {
-    if (!_form.currentState!.validate()) return;
-    setState(() => _busy = true);
-    try {
-      final unitGrams = parseNumber(_unitGrams.text);
-      await ref.read(libraryRepositoryProvider).createFood(
-            nameEn: _nameEn.text,
-            nameAr: _nameAr.text,
-            kcal: parseNumber(_kcal.text)!,
-            protein: parseNumber(_protein.text) ?? 0,
-            carbs: parseNumber(_carbs.text) ?? 0,
-            fat: parseNumber(_fat.text) ?? 0,
-            barcode: widget.barcode,
-            units: _unitName.text.trim().isEmpty || unitGrams == null ? const [] : [(_unitName.text.trim(), _unitName.text.trim(), unitGrams)],
-          );
-      if (mounted) Navigator.pop(context, true);
-    } catch (e) {
-      if (mounted) showError(context, e);
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    Widget field(TextEditingController c, String label, {bool required = false}) => TextFormField(
-          controller: c,
-          decoration: InputDecoration(labelText: label),
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          validator: (v) => validateNumber(context, v, required: required, min: 0, max: 900),
-        );
-    return AlertDialog(
-      title: Text(widget.barcode == null ? l10n.newFood : l10n.foodFromBarcode),
-      content: Form(
-        key: _form,
-        child: SingleChildScrollView(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            TextFormField(
-              controller: _nameEn,
-              decoration: InputDecoration(labelText: l10n.nameEnglish),
-              validator: (v) => v == null || v.trim().isEmpty ? l10n.required : null,
-            ),
-            TextFormField(controller: _nameAr, decoration: InputDecoration(labelText: l10n.nameArabicOptional)),
-            const SizedBox(height: 8),
-            Text(l10n.per100g, style: Theme.of(context).textTheme.labelLarge),
-            field(_kcal, l10n.kcal, required: true),
-            Row(children: [
-              Expanded(child: field(_protein, l10n.protein)),
-              const SizedBox(width: 8),
-              Expanded(child: field(_carbs, l10n.carbs)),
-              const SizedBox(width: 8),
-              Expanded(child: field(_fat, l10n.fat)),
-            ]),
-            const SizedBox(height: 8),
-            Text(l10n.unitOptional, style: Theme.of(context).textTheme.labelLarge),
-            Row(children: [
-              Expanded(child: TextFormField(controller: _unitName, decoration: InputDecoration(labelText: l10n.unitName, hintText: l10n.unitNameHint))),
-              const SizedBox(width: 8),
-              Expanded(child: field(_unitGrams, l10n.gramsPerUnit)),
-            ]),
-          ]),
-        ),
-      ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancel)),
-        FilledButton(onPressed: _busy ? null : _save, child: Text(l10n.save)),
-      ],
     );
   }
 }

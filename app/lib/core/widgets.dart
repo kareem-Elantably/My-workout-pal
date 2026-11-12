@@ -174,7 +174,8 @@ class MacrosLine extends StatelessWidget {
 }
 
 /// Asks for a line of text (rename, add a day, ...). Null when cancelled.
-Future<String?> promptText(BuildContext context, {required String title, String? initial, String? label, bool multiline = false}) {
+Future<String?> promptText(BuildContext context,
+    {required String title, String? initial, String? label, bool multiline = false, TextInputType? keyboardType}) {
   final controller = TextEditingController(text: initial);
   return showDialog<String>(
     context: context,
@@ -184,6 +185,7 @@ Future<String?> promptText(BuildContext context, {required String title, String?
         controller: controller,
         autofocus: true,
         decoration: InputDecoration(labelText: label),
+        keyboardType: keyboardType ?? (multiline ? TextInputType.multiline : TextInputType.text),
         minLines: multiline ? 3 : 1,
         maxLines: multiline ? 6 : 1,
         textInputAction: multiline ? TextInputAction.newline : TextInputAction.done,

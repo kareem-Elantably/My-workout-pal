@@ -14,32 +14,70 @@ final nutritionPlanProvider = FutureProvider.autoDispose.family<(NutritionPlan, 
   return (plan, frozen);
 });
 
+/// One change to the plan, applied to the version being edited.
+typedef NutritionEdit = Future<void> Function(NutritionVersion version);
+
 /// Builds a nutrition plan: meals → options (A, B, ...) → foods with
 /// amounts in grams or units. Macros add up as you go.
-class NutritionEditorScreen extends ConsumerWidget {
+///
+/// Like the workout editor, once the trainee has logged a meal the first
+/// edit copies the version into a new one from today and applies there.
+class NutritionEditorScreen extends ConsumerStatefulWidget {
   const NutritionEditorScreen({super.key, required this.planId});
 
   final String planId;
 
-  Future<void> _run(BuildContext context, WidgetRef ref, Future<void> Function() action) async {
+  @override
+  ConsumerState<NutritionEditorScreen> createState() => _NutritionEditorScreenState();
+}
+
+class _NutritionEditorScreenState extends ConsumerState<NutritionEditorScreen> {
+  bool _busy = false;
+
+  Future<void> _edit(NutritionEdit edit) async {
+    final data = ref.read(nutritionPlanProvider(widget.planId)).value;
+    if (_busy || data == null) return;
+    setState(() => _busy = true);
     try {
-      await action();
-      ref.invalidate(nutritionPlanProvider(planId));
+      final (plan, frozen) = data;
+      var version = plan.latest!;
+      if (frozen) {
+        await ref.read(planEditorRepositoryProvider).copyNutritionVersion(version.id, plan.id);
+        version = (await ref.read(nutritionRepositoryProvider).plan(plan.id)).latest!;
+        if (mounted) showMessage(context, context.l10n.editSavedAsNewVersion);
+      }
+      await edit(version);
     } catch (e) {
-      if (context.mounted) showError(context, e);
+      if (mounted) showError(context, e);
+    } finally {
+      ref.invalidate(nutritionPlanProvider(widget.planId));
+      try {
+        await ref.read(nutritionPlanProvider(widget.planId).future);
+      } catch (_) {}
+      if (mounted) setState(() => _busy = false);
     }
   }
 
-  Future<void> _editMeal(BuildContext context, WidgetRef ref, String versionId, {Meal? meal, required int sortOrder}) async {
+  /// Plan-level settings aren't versioned: no copy needed.
+  Future<void> _plain(Future<void> Function() action) async {
+    try {
+      await action();
+    } catch (e) {
+      if (mounted) showError(context, e);
+    }
+    ref.invalidate(nutritionPlanProvider(widget.planId));
+  }
+
+  Future<void> _editMeal({int? index, Meal? meal, required int sortOrder}) async {
     final result = await showDialog<(String, String?, bool)>(
       context: context,
       builder: (_) => _MealDialog(meal: meal),
     );
-    if (result == null || !context.mounted) return;
+    if (result == null) return;
     final (name, time, counts) = result;
-    await _run(context, ref, () => ref.read(planEditorRepositoryProvider).saveMeal(
-          versionId,
-          id: meal?.id,
+    await _edit((v) => ref.read(planEditorRepositoryProvider).saveMeal(
+          v.id,
+          id: index == null ? null : v.meals[index].id,
           name: name,
           time: time,
           sortOrder: meal?.sortOrder ?? sortOrder,
@@ -47,124 +85,134 @@ class NutritionEditorScreen extends ConsumerWidget {
         ));
   }
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Future<void> _mealAction(String action, int index, Meal meal) async {
     final l10n = context.l10n;
-    final data = ref.watch(nutritionPlanProvider(planId));
     final repo = ref.read(planEditorRepositoryProvider);
+    List<Meal> moved(NutritionVersion v, int to) => [...v.meals]..insert(to, v.meals[index])..removeAt(to < index ? index + 1 : index);
+    switch (action) {
+      case 'edit':
+        await _editMeal(index: index, meal: meal, sortOrder: meal.sortOrder);
+      case 'up':
+        await _edit((v) => repo.reorderMeals(moved(v, index - 1)));
+      case 'down':
+        await _edit((v) => repo.reorderMeals(moved(v, index + 2)));
+      case 'option':
+        final label = await promptText(context, title: l10n.optionName, initial: String.fromCharCode(65 + meal.options.length));
+        if (label != null && label.trim().isNotEmpty) {
+          await _edit((v) => repo.saveOption(v.meals[index].id, label: label, sortOrder: meal.options.length + 1));
+        }
+      case 'delete':
+        if (await confirm(context, l10n.deleteMealConfirm, action: l10n.delete)) {
+          await _edit((v) => repo.deleteMeal(v.meals[index].id));
+        }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final data = ref.watch(nutritionPlanProvider(widget.planId));
+    final repo = ref.read(planEditorRepositoryProvider);
+    final plan = data.value?.$1;
     return Scaffold(
       appBar: AppBar(
-        title: Text(data.value?.$1.name ?? ''),
+        title: Text(plan?.name ?? ''),
+        bottom: _busy ? const PreferredSize(preferredSize: Size.fromHeight(4), child: LinearProgressIndicator()) : null,
         actions: [
-          if (data.value != null)
+          if (plan != null)
             PopupMenuButton<String>(
               onSelected: (action) async {
-                final plan = data.value!.$1;
                 if (action == 'rename') {
                   final name = await promptText(context, title: l10n.renamePlan, initial: plan.name);
-                  if (name != null && name.trim().isNotEmpty && context.mounted) {
-                    await _run(context, ref, () => repo.updateNutritionPlan(planId, name: name));
-                  }
+                  if (name != null && name.trim().isNotEmpty) await _plain(() => repo.updateNutritionPlan(widget.planId, name: name));
                 } else if (action == 'template' && plan.latest != null) {
                   final name = await promptText(context, title: l10n.saveAsTemplate, initial: plan.name);
-                  if (name != null && name.trim().isNotEmpty && context.mounted) {
-                    await _run(context, ref, () => repo.saveNutritionAsTemplate(plan, plan.latest!, name));
+                  if (name != null && name.trim().isNotEmpty) {
+                    await _plain(() => repo.saveNutritionAsTemplate(plan, plan.latest!, name));
                     if (context.mounted) showMessage(context, l10n.templateSaved);
                   }
                 }
               },
               itemBuilder: (context) => [
                 PopupMenuItem(value: 'rename', child: Text(l10n.renamePlan)),
-                if (data.value!.$1.traineeId != null) PopupMenuItem(value: 'template', child: Text(l10n.saveAsTemplate)),
+                if (plan.traineeId != null) PopupMenuItem(value: 'template', child: Text(l10n.saveAsTemplate)),
               ],
             ),
         ],
       ),
-      floatingActionButton: data.value == null || data.value!.$2
+      floatingActionButton: plan?.latest == null
           ? null
           : FloatingActionButton.extended(
               icon: const Icon(Icons.add),
               label: Text(l10n.addMeal),
-              onPressed: () => _editMeal(context, ref, data.value!.$1.latest!.id, sortOrder: data.value!.$1.latest!.meals.length + 1),
+              onPressed: _busy ? null : () => _editMeal(sortOrder: plan!.latest!.meals.length + 1),
             ),
       body: AsyncBody(
         value: data,
-        onRetry: () => ref.invalidate(nutritionPlanProvider(planId)),
+        onRetry: () => ref.invalidate(nutritionPlanProvider(widget.planId)),
         builder: (d) {
-          final (plan, frozen) = d;
+          final (plan, _) = d;
           final version = plan.latest;
           if (version == null) return const SizedBox.shrink();
           final dayTotal = version.meals
               .where((m) => m.options.isNotEmpty)
               .fold(const Macros(), (sum, m) => sum + m.options.first.macros);
-          return ListView(
-            padding: const EdgeInsets.only(bottom: 96),
-            children: [
-              if (frozen)
-                MaterialBanner(
-                  content: Text(l10n.versionHasLogs),
-                  leading: const Icon(Icons.lock_outline),
-                  actions: [
-                    TextButton(
-                      onPressed: () => _run(context, ref, () => repo.copyNutritionVersion(version.id, plan.id)),
-                      child: Text(l10n.newVersion),
-                    ),
-                  ],
+          return AbsorbPointer(
+            absorbing: _busy,
+            child: ListView(
+              padding: const EdgeInsets.only(bottom: 96),
+              children: [
+                SwitchListTile(
+                  title: Text(l10n.showMacrosToTrainee),
+                  value: plan.showMacros,
+                  onChanged: (on) => _plain(() => repo.updateNutritionPlan(widget.planId, showMacros: on)),
                 ),
-              SwitchListTile(
-                title: Text(l10n.showMacrosToTrainee),
-                value: plan.showMacros,
-                onChanged: (on) => _run(context, ref, () => repo.updateNutritionPlan(planId, showMacros: on)),
-              ),
-              ListTile(title: Text(l10n.dayTotalFirstOptions), subtitle: MacrosLine(dayTotal)),
-              for (final meal in version.meals)
-                Card(
-                  margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        ListTile(
-                          title: Text([meal.name, ?meal.timeHint].join(' · '), style: Theme.of(context).textTheme.titleMedium),
-                          subtitle: meal.countsForStreak ? null : Text(l10n.optionalNotInStreak),
-                          trailing: frozen
-                              ? null
-                              : PopupMenuButton<String>(
-                                  onSelected: (action) async {
-                                    if (action == 'edit') {
-                                      await _editMeal(context, ref, version.id, meal: meal, sortOrder: meal.sortOrder);
-                                    } else if (action == 'option') {
-                                      if (!context.mounted) return;
-                                      final label = await promptText(context, title: l10n.optionName, initial: String.fromCharCode(65 + meal.options.length));
-                                      if (label != null && label.trim().isNotEmpty && context.mounted) {
-                                        await _run(context, ref, () => repo.saveOption(meal.id, label: label, sortOrder: meal.options.length + 1));
-                                      }
-                                    } else {
-                                      if (!await confirm(context, l10n.deleteMealConfirm, action: l10n.delete)) return;
-                                      if (context.mounted) await _run(context, ref, () => repo.deleteMeal(meal.id));
-                                    }
-                                  },
-                                  itemBuilder: (context) => [
-                                    PopupMenuItem(value: 'edit', child: Text(l10n.edit)),
-                                    PopupMenuItem(value: 'option', child: Text(l10n.addOption)),
-                                    PopupMenuItem(value: 'delete', child: Text(l10n.delete)),
-                                  ],
-                                ),
-                        ),
-                        if (meal.options.isEmpty && !frozen)
-                          TextButton.icon(
-                            icon: const Icon(Icons.add),
-                            label: Text(l10n.addOption),
-                            onPressed: () => _run(context, ref, () => repo.saveOption(meal.id, label: 'A', sortOrder: 1)),
+                ListTile(title: Text(l10n.dayTotalFirstOptions), subtitle: MacrosLine(dayTotal)),
+                if (version.meals.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                    child: Text(l10n.nutritionEditorEmptyHint),
+                  ),
+                for (final (mi, meal) in version.meals.indexed)
+                  Card(
+                    margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          ListTile(
+                            title: Text([meal.name, ?meal.timeHint].join(' · '), style: Theme.of(context).textTheme.titleMedium),
+                            subtitle: meal.countsForStreak ? null : Text(l10n.optionalNotInStreak),
+                            trailing: PopupMenuButton<String>(
+                              onSelected: (action) => _mealAction(action, mi, meal),
+                              itemBuilder: (context) => [
+                                PopupMenuItem(value: 'edit', child: Text(l10n.edit)),
+                                if (mi > 0) PopupMenuItem(value: 'up', child: Text(l10n.moveUp)),
+                                if (mi < version.meals.length - 1) PopupMenuItem(value: 'down', child: Text(l10n.moveDown)),
+                                PopupMenuItem(value: 'option', child: Text(l10n.addOption)),
+                                PopupMenuItem(value: 'delete', child: Text(l10n.delete)),
+                              ],
+                            ),
                           ),
-                        for (final option in meal.options)
-                          _OptionTile(option: option, frozen: frozen, run: (a) => _run(context, ref, a)),
-                      ],
+                          if (meal.options.isEmpty)
+                            TextButton.icon(
+                              icon: const Icon(Icons.add),
+                              label: Text(l10n.addOption),
+                              onPressed: () => _edit((v) => repo.saveOption(v.meals[mi].id, label: 'A', sortOrder: 1)),
+                            ),
+                          for (final (oi, option) in meal.options.indexed)
+                            _OptionTile(
+                              option: option,
+                              edit: _edit,
+                              find: (v) => v.meals[mi].options[oi],
+                            ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-            ],
+              ],
+            ),
           );
         },
       ),
@@ -173,11 +221,20 @@ class NutritionEditorScreen extends ConsumerWidget {
 }
 
 class _OptionTile extends ConsumerWidget {
-  const _OptionTile({required this.option, required this.frozen, required this.run});
+  const _OptionTile({required this.option, required this.edit, required this.find});
 
   final MealOption option;
-  final bool frozen;
-  final Future<void> Function(Future<void> Function() action) run;
+  final Future<void> Function(NutritionEdit edit) edit;
+
+  /// The same option in the version being edited.
+  final MealOption Function(NutritionVersion version) find;
+
+  /// The same item in the version being edited (matched on what it holds,
+  /// since ids change in a new version).
+  static MealItem _sameItem(MealOption option, MealItem item) => option.items.firstWhere(
+        (i) => i.food.id == item.food.id && i.quantity == item.quantity && i.unit?.id == item.unit?.id,
+        orElse: () => item,
+      );
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -190,14 +247,15 @@ class _OptionTile extends ConsumerWidget {
         children: [
           Row(children: [
             Expanded(child: Text(l10n.optionLabel(option.label), style: Theme.of(context).textTheme.labelLarge)),
-            if (!frozen)
-              IconButton(
-                tooltip: l10n.delete,
-                icon: const Icon(Icons.delete_outline, size: 20),
-                onPressed: () async {
-                  if (await confirm(context, l10n.deleteOptionConfirm, action: l10n.delete)) await run(() => repo.deleteOption(option.id));
-                },
-              ),
+            IconButton(
+              tooltip: l10n.delete,
+              icon: const Icon(Icons.delete_outline, size: 20),
+              onPressed: () async {
+                if (await confirm(context, l10n.deleteOptionConfirm, action: l10n.delete)) {
+                  await edit((v) => repo.deleteOption(find(v).id));
+                }
+              },
+            ),
           ]),
           for (final item in option.items)
             ListTile(
@@ -205,37 +263,35 @@ class _OptionTile extends ConsumerWidget {
               contentPadding: EdgeInsets.zero,
               title: Text(item.food.name(context)),
               subtitle: Text(item.amount(context)),
-              onTap: frozen
-                  ? null
-                  : () async {
-                      final amount = await _askAmount(context, item.food, item: item);
-                      if (amount != null) {
-                        await run(() => repo.saveItem(option.id, id: item.id, foodId: item.food.id, quantity: amount.$1, unitId: amount.$2));
-                      }
-                    },
-              trailing: frozen
-                  ? null
-                  : IconButton(
-                      tooltip: l10n.delete,
-                      icon: const Icon(Icons.close, size: 18),
-                      onPressed: () => run(() => repo.deleteItem(item.id)),
-                    ),
-            ),
-          MacrosLine(option.macros),
-          if (!frozen)
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: TextButton.icon(
-                icon: const Icon(Icons.add),
-                label: Text(l10n.addFood),
-                onPressed: () async {
-                  final food = await pickFood(context);
-                  if (food == null || !context.mounted) return;
-                  final amount = await _askAmount(context, food);
-                  if (amount != null) await run(() => repo.saveItem(option.id, foodId: food.id, quantity: amount.$1, unitId: amount.$2));
-                },
+              onTap: () async {
+                final amount = await _askAmount(context, item.food, item: item);
+                if (amount != null) {
+                  await edit((v) {
+                    final o = find(v);
+                    return repo.saveItem(o.id, id: _sameItem(o, item).id, foodId: item.food.id, quantity: amount.$1, unitId: amount.$2);
+                  });
+                }
+              },
+              trailing: IconButton(
+                tooltip: l10n.delete,
+                icon: const Icon(Icons.close, size: 18),
+                onPressed: () => edit((v) => repo.deleteItem(_sameItem(find(v), item).id)),
               ),
             ),
+          MacrosLine(option.macros),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: TextButton.icon(
+              icon: const Icon(Icons.add),
+              label: Text(l10n.addFood),
+              onPressed: () async {
+                final food = await pickFood(context, canAdd: true);
+                if (food == null || !context.mounted) return;
+                final amount = await _askAmount(context, food);
+                if (amount != null) await edit((v) => repo.saveItem(find(v).id, foodId: food.id, quantity: amount.$1, unitId: amount.$2));
+              },
+            ),
+          ),
           const Divider(),
         ],
       ),

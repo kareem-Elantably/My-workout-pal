@@ -102,6 +102,30 @@ class PlanEditorRepository {
     }
   }
 
+  /// A copy of the exercise right below it.
+  Future<void> duplicateDayExercise(WorkoutDay day, int index) async {
+    final source = day.exercises[index];
+    for (final e in day.exercises.skip(index + 1)) {
+      await _client.from('workout_day_exercises').update({'sort_order': e.sortOrder + 1}).eq('id', e.id);
+    }
+    await _client
+        .from('workout_day_exercises')
+        .insert({...source.toRow(), 'day_id': day.id, 'sort_order': source.sortOrder + 1});
+  }
+
+  /// Moves a training day to an empty (rest) day number in the cycle.
+  Future<void> moveDay(String dayId, int dayNumber) =>
+      _client.from('workout_days').update({'day_number': dayNumber}).eq('id', dayId);
+
+  /// A copy of a training day, with all its exercises, on a rest day.
+  Future<void> duplicateDay(String versionId, WorkoutDay day, int dayNumber, String name) async {
+    final id = await addDay(versionId, dayNumber, name);
+    if (day.exercises.isEmpty) return;
+    await _client.from('workout_day_exercises').insert([
+      for (final e in day.exercises) {...e.toRow(), 'day_id': id},
+    ]);
+  }
+
   Future<List<WorkoutPlan>> workoutTemplates() async {
     final rows = await _client
         .from('workout_plans')
@@ -180,6 +204,14 @@ class PlanEditorRepository {
   }
 
   Future<void> deleteMeal(String id) => _client.from('meals').delete().eq('id', id);
+
+  Future<void> reorderMeals(List<Meal> ordered) async {
+    for (var i = 0; i < ordered.length; i++) {
+      if (ordered[i].sortOrder != i + 1) {
+        await _client.from('meals').update({'sort_order': i + 1}).eq('id', ordered[i].id);
+      }
+    }
+  }
 
   Future<void> saveOption(String mealId, {String? id, required String label, required int sortOrder}) => id == null
       ? _client.from('meal_options').insert({'meal_id': mealId, 'label': label.trim(), 'sort_order': sortOrder})
